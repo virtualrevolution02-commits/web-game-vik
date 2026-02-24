@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Isometric Drift</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      overflow: hidden;
+      background: #3B76F6;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="game-canvas"></canvas>
+  <script src="https://unpkg.com/three@0.152.0/build/three.min.js"></script>
+  <!-- MediaPipe dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <style>
+    #desktop-ui {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      border-radius: 12px;
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 100;
+      transition: all 0.3s ease;
+    }
+
+    .ui-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+
+    .btn-toggle {
+      background: #3B76F6;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .btn-toggle:hover {
+      background: #2563EB;
+    }
+
+    .btn-toggle.active {
+      background: #10B981;
+    }
+
+    #status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #EF4444;
+    }
+
+    .status-dot.active {
+      background: #10B981;
+    }
+
+    #camera-preview {
+      width: 160px;
+      height: 120px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #111;
+      display: none;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .input-video {
+      display: none;
+    }
+
+    .output-canvas {
+      width: 100%;
+      height: 100%;
+      transform: scaleX(-1);
+    }
+  </style>
+
+  <div id="desktop-ui">
+    <div class="ui-title">Desktop Mode</div>
+    <div id="camera-preview">
+      <video class="input-video"></video>
+      <canvas class="output-canvas"></canvas>
+    </div>
+    <button id="hand-tracking-btn" class="btn-toggle">Enable Hand Tracking</button>
+    <div id="status-indicator">
+      <div class="status-dot"></div>
+      <span id="status-text">Hand Tracking OFF</span>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+
+</html>
