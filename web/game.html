@@ -36,7 +36,7 @@
     #desktop-ui {
       position: absolute;
       top: 20px;
-      right: 20px;
+      left: 20px;
       background: rgba(0, 0, 0, 0.7);
       padding: 15px;
       border-radius: 12px;
@@ -79,6 +79,16 @@
       background: #10B981;
     }
 
+    #speed-container {
+      font-size: 18px;
+      font-weight: 700;
+      color: #10B981;
+      padding: 5px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 5px;
+      font-variant-numeric: tabular-nums;
+    }
+
     #status-indicator {
       display: flex;
       align-items: center;
@@ -119,12 +129,13 @@
   </style>
 
   <div id="desktop-ui">
-    <div class="ui-title">Desktop Mode</div>
+    <div class="ui-title">Motion Control Mode</div>
     <div id="camera-preview">
       <video class="input-video"></video>
       <canvas class="output-canvas"></canvas>
     </div>
     <button id="hand-tracking-btn" class="btn-toggle">Enable Hand Tracking</button>
+    <div id="speed-container">SPEED: <span id="speed-text">0</span> KM/H</div>
     <div id="status-indicator">
       <div class="status-dot"></div>
       <span id="status-text">Hand Tracking OFF</span>
