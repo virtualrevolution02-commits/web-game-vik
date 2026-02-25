@@ -158,7 +158,23 @@
 
     let accumulator = 0;
     let gameStarted = false;
+    let gameLoopStarted = false;
 
+    // Expose a function to start the game loop when UI is done
+    window.start3DGame = function () {
+        if (gameLoopStarted) return;
+        gameLoopStarted = true;
+        gameStarted = true;
+
+        // Initialize audio system (requires user interaction)
+        initAudio();
+
+        // Simulate filling the loading bar before fading
+        const bar = document.getElementById('loading-progress');
+        if (bar) bar.style.width = '100%';
+
+        animate();
+    };
     // World object tracking
     const worldObjects = new Map();
     const seededRng = mulberry32(42);
@@ -235,7 +251,21 @@
         initHandTracking();
 
         window.addEventListener('resize', onResize);
-        animate();
+
+        // Don't call animate() here; it will be called by start3DGame()
+
+        // Let's pretend loading takes a brief moment
+        setTimeout(() => {
+            const bar = document.getElementById('loading-progress');
+            if (bar) bar.style.width = '80%';
+
+            setTimeout(() => {
+                // Initial load complete, show sign-in screen
+                if (typeof switchScreen === 'function') {
+                    switchScreen('screen-signin');
+                }
+            }, 800);
+        }, 500);
     }
 
     // ─── GROUND ────────────────────────────────────────────────────────────────
@@ -1196,6 +1226,7 @@
 
     // â”€â”€â”€ AUDIO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function initAudio() {
+        if (audioCtx) return;
         try {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             engineOsc = audioCtx.createOscillator(); engineOsc.type = 'sawtooth'; engineOsc.frequency.value = 45;

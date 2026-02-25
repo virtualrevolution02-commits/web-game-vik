@@ -134,6 +134,165 @@
     }
   </style>
 
+  <style>
+    /* --- ONBOARDING UI --- */
+    #onboarding-ui {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(135deg, rgba(10, 20, 30, 0.95), rgba(5, 10, 15, 0.98));
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      transition: opacity 0.8s ease;
+    }
+
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 40px;
+      width: 400px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s ease;
+    }
+
+    .glass-panel.active {
+      display: flex;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .ob-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 5px;
+      background: linear-gradient(90deg, #10B981, #3B82F6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .ob-subtitle {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 30px;
+    }
+
+    .ob-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 12px 15px;
+      border-radius: 8px;
+      color: white;
+      margin-bottom: 15px;
+      font-size: 14px;
+      outline: none;
+      transition: border 0.3s;
+    }
+
+    .ob-input:focus {
+      border-color: #10B981;
+    }
+
+    .ob-btn {
+      width: 100%;
+      background: linear-gradient(90deg, #10B981, #059669);
+      border: none;
+      padding: 14px;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .ob-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .ob-link {
+      margin-top: 20px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .ob-link:hover {
+      color: #10B981;
+    }
+
+    /* Loading Bar */
+    .loading-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    .loading-bar {
+      width: 0%;
+      height: 100%;
+      background: #10B981;
+      transition: width 0.3s ease;
+    }
+  </style>
+
+  <!-- ONBOARDING OVERLAY -->
+  <div id="onboarding-ui">
+
+    <!-- LOADING SCREEN -->
+    <div id="screen-loading" class="glass-panel active">
+      <div class="ob-title">ISOMETRIC DRIFT</div>
+      <div class="ob-subtitle">Initializing World...</div>
+      <div class="loading-bar-container">
+        <div id="loading-progress" class="loading-bar"></div>
+      </div>
+    </div>
+
+    <!-- SIGN IN SCREEN -->
+    <div id="screen-signin" class="glass-panel">
+      <div class="ob-title">Welcome Back</div>
+      <div class="ob-subtitle">Sign in to sync your progress</div>
+      <input type="email" class="ob-input" placeholder="Email Address">
+      <input type="password" class="ob-input" placeholder="Password">
+      <button class="ob-btn" onclick="startGameFlow()">Play Game</button>
+      <div class="ob-link" onclick="switchScreen('screen-signup')">Don't have an account? Sign Up</div>
+    </div>
+
+    <!-- SIGN UP SCREEN -->
+    <div id="screen-signup" class="glass-panel">
+      <div class="ob-title">Create Account</div>
+      <div class="ob-subtitle">Join the worldwide leaderboard</div>
+      <input type="text" class="ob-input" placeholder="Driver Name">
+      <input type="email" class="ob-input" placeholder="Email Address">
+      <input type="password" class="ob-input" placeholder="Password">
+      <button class="ob-btn" onclick="startGameFlow()">Register & Play</button>
+      <div class="ob-link" onclick="switchScreen('screen-signin')">Already have an account? Sign In</div>
+    </div>
+
+  </div>
+
   <div id="desktop-ui">
     <div class="ui-title">Motion Control Mode</div>
     <div id="camera-preview">
@@ -147,6 +306,25 @@
       <span id="status-text">Hand Tracking OFF</span>
     </div>
   </div>
+
+  <script>
+    // Simple UI Flow logic
+    function switchScreen(screenId) {
+      document.querySelectorAll('.glass-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    function startGameFlow() {
+      // Fade out the entire onboarding UI
+      const ui = document.getElementById('onboarding-ui');
+      ui.style.opacity = '0';
+      setTimeout(() => {
+        ui.style.display = 'none';
+        // Tell the 3D game to actually start running
+        if (window.start3DGame) window.start3DGame();
+      }, 800);
+    }
+  </script>
 
   <script src="game.js"></script>
 </body>
