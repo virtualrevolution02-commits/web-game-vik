@@ -160,7 +160,7 @@
     let gameStarted = false;
     let gameLoopStarted = false;
 
-    // Expose a function to start the game loop when UI is done
+    // Expose a function to fully activate the game loop when UI is done
     window.start3DGame = function () {
         if (gameLoopStarted) return;
         gameLoopStarted = true;
@@ -172,8 +172,6 @@
         // Simulate filling the loading bar before fading
         const bar = document.getElementById('loading-progress');
         if (bar) bar.style.width = '100%';
-
-        animate();
     };
     // World object tracking
     const worldObjects = new Map();
@@ -252,7 +250,8 @@
 
         window.addEventListener('resize', onResize);
 
-        // Don't call animate() here; it will be called by start3DGame()
+        // Start rendering the background immediately
+        animate();
 
         // Let's pretend loading takes a brief moment
         setTimeout(() => {
@@ -260,7 +259,7 @@
             if (bar) bar.style.width = '80%';
 
             setTimeout(() => {
-                // Initial load complete, show sign-in screen
+                // Initial load complete, show welcome screen
                 if (typeof switchScreen === 'function') {
                     switchScreen('screen-signin');
                 }

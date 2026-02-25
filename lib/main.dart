@@ -83,9 +83,6 @@ class _GameShellState extends State<GameShell> with TickerProviderStateMixin {
             child: PlatformView.create('game.html', _handleMessage),
           ),
 
-          // Title overlay (visible before game starts)
-          if (!_gameStarted) Positioned.fill(child: _buildTitleOverlay()),
-
           // HUD overlay (visible during gameplay)
           if (_gameStarted)
             Positioned(
@@ -138,49 +135,6 @@ class _GameShellState extends State<GameShell> with TickerProviderStateMixin {
 
           // Control hints (bottom left)
           Positioned(bottom: 20, left: 24, child: _buildControlHints()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTitleOverlay() {
-    return Container(
-      color: Colors.transparent,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 40),
-          const Text(
-            'Start driving',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 42,
-              fontWeight: FontWeight.w300,
-              letterSpacing: 2,
-              shadows: [
-                Shadow(blurRadius: 20, color: Colors.black26, offset: Offset(0, 4)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          AnimatedBuilder(
-            animation: _pulseController,
-            builder: (context, child) {
-              return Opacity(
-                opacity: 0.4 + _pulseController.value * 0.6,
-                child: child,
-              );
-            },
-            child: const Text(
-              'Use the arrow keys',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                letterSpacing: 3,
-              ),
-            ),
-          ),
         ],
       ),
     );
