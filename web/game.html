@@ -176,72 +176,6 @@
       transform: translateY(0);
     }
 
-    /* --- LOADING PANEL --- */
-    .loading-panel {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: #0a0a0e;
-      z-index: 2000;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 0.8s ease;
-    }
-
-    .loading-panel.active {
-      display: flex;
-      opacity: 1;
-    }
-
-    .loading-logo {
-      font-size: 48px;
-      font-weight: 800;
-      letter-spacing: 6px;
-      text-transform: uppercase;
-      background: linear-gradient(90deg, #10B981, #3B82F6, #10B981);
-      background-size: 200% auto;
-      color: transparent;
-      -webkit-background-clip: text;
-      background-clip: text;
-      animation: shine 3s linear infinite;
-      margin-bottom: 10px;
-    }
-
-    .loading-subtitle {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.4);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 40px;
-    }
-
-    @keyframes shine {
-      to {
-        background-position: 200% center;
-      }
-    }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255, 255, 255, 0.05);
-      border-top-color: #10B981;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 30px;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
     .ob-title {
       font-size: 28px;
       font-weight: 700;
@@ -320,9 +254,9 @@
 
     /* Loading Bar */
     .loading-bar-container {
-      width: 300px;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.05);
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
       border-radius: 3px;
       overflow: hidden;
       margin-top: 20px;
@@ -331,7 +265,7 @@
     .loading-bar {
       width: 0%;
       height: 100%;
-      background: linear-gradient(90deg, #10B981, #3B82F6);
+      background: #10B981;
       transition: width 0.3s ease;
     }
   </style>
@@ -340,13 +274,11 @@
   <div id="onboarding-ui">
 
     <!-- LOADING SCREEN -->
-    <div id="screen-loading" class="loading-panel active">
-      <div class="spinner"></div>
-      <div class="loading-logo">Vistara Tech</div>
-      <div class="loading-subtitle">Initializing World Engine</div>
+    <div id="screen-loading" class="glass-panel active">
+      <div class="ob-title">Vistara Tech</div>
+      <div class="ob-subtitle">Initializing World...</div>
       <div class="loading-bar-container">
-        <div id="loading-progress" class="loading-bar">
-        </div>
+        <div id="loading-progress" class="loading-bar"></div>
       </div>
     </div>
 
@@ -393,7 +325,6 @@
     // Simple UI Flow logic
     function switchScreen(screenId) {
       document.querySelectorAll('.glass-panel').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.loading-panel').forEach(p => p.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
     }
 
