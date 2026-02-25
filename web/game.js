@@ -1265,12 +1265,21 @@
             } else {
                 // Hand Lost -> Stop the car
                 input.up = false;
-                input.down = true; // apply brakes unconditionally
+                // Only brake if the car is currently moving forward
+                if (v.speed > 0.1 && (v.vel.x * fwdX + v.vel.z * fwdZ) > 0) {
+                    input.down = true;
+                } else {
+                    input.down = false;
+                    // Fully zero out velocity when stopped to prevent lingering movement
+                    v.vel.x = 0;
+                    v.vel.z = 0;
+                    v.speed = 0;
+                }
                 steerInput = 0;
             }
         } else {
             // Standard keyboard control
-            if (input.left) steerInput = 1; 
+            if (input.left) steerInput = 1;
             if (input.right) steerInput = -1;
         }
 
