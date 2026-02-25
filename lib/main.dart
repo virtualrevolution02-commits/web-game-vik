@@ -11,7 +11,7 @@ class IsometricDriftApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Isometric Drift',
+      title: 'Vistara Drive',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
