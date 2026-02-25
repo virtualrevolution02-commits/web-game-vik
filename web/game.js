@@ -253,18 +253,26 @@
         // Start rendering the background immediately
         animate();
 
-        // Let's pretend loading takes a brief moment
+        // Let's pretend loading takes more than 5 seconds
         setTimeout(() => {
             const bar = document.getElementById('loading-progress');
-            if (bar) bar.style.width = '80%';
+            if (bar) bar.style.width = '30%';
 
             setTimeout(() => {
-                // Initial load complete, show welcome screen
-                if (typeof switchScreen === 'function') {
-                    switchScreen('screen-signin');
-                }
-            }, 800);
-        }, 500);
+                if (bar) bar.style.width = '70%';
+
+                setTimeout(() => {
+                    if (bar) bar.style.width = '100%';
+
+                    setTimeout(() => {
+                        // Initial load complete, show welcome screen
+                        if (typeof switchScreen === 'function') {
+                            switchScreen('screen-signin');
+                        }
+                    }, 800);
+                }, 1500);
+            }, 2500);
+        }, 1500);
     }
 
     // ─── GROUND ────────────────────────────────────────────────────────────────
