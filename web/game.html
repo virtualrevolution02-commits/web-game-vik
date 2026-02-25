@@ -367,6 +367,10 @@
         if (!res.ok) {
           errorDiv.textContent = data.error || 'Sign in failed';
         } else {
+          // Save session
+          if (data.user) {
+            localStorage.setItem('vistara_user', JSON.stringify(data.user));
+          }
           startGameFlow();
         }
       } catch (err) {
@@ -403,12 +407,25 @@
         if (!res.ok) {
           errorDiv.textContent = data.error || 'Sign up failed';
         } else {
+          // Save session
+          if (data.user) {
+            localStorage.setItem('vistara_user', JSON.stringify(data.user));
+          }
           startGameFlow();
         }
       } catch (err) {
         errorDiv.textContent = 'Network error';
       }
     }
+
+    // Check for existing session on load
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedUser = localStorage.getItem('vistara_user');
+      if (savedUser) {
+        // Auto-start if session exists
+        startGameFlow();
+      }
+    });
   </script>
 
   <script src="game.js"></script>
