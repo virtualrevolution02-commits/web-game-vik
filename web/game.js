@@ -1114,7 +1114,7 @@
                     }
                     await handTracking.camera.start();
                     handTracking.enabled = true;
-                    btn.textContent = 'Disable Hand Tracking';
+                    btn.textContent = 'Disable';
                     btn.classList.add('active');
                     preview.style.display = 'block';
                     statusText.textContent = 'Tracking Active';
@@ -1132,7 +1132,7 @@
                 }
             } else {
                 handTracking.enabled = false;
-                btn.textContent = 'Enable Hand Tracking';
+                btn.textContent = 'Enable';
                 btn.classList.remove('active');
                 preview.style.display = 'none';
                 statusText.textContent = 'Hand Tracking OFF';
@@ -1241,7 +1241,7 @@
 
         // Boost steering speed for hand tracking to make it feel "immediate" and accurate
         if (handTracking.enabled && handTracking.handDetected) {
-            steerSpeed *= 2.5;
+            steerSpeed *= 2.0;
         }
 
         if (steerInput !== 0 && v.speed > 0.3) v.angularVel += steerInput * steerSpeed * dt;
@@ -1323,10 +1323,7 @@
         // Update Shader Uniforms
         _grassUniforms.uCarPosition.value.copy(vehicle.pos);
 
-        // Update Speedometer UI
-        if (handTracking.speedText) {
-            handTracking.speedText.textContent = Math.round(v.speed * 5);
-        }
+
     }
 
     // â”€â”€â”€ MAIN LOOP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

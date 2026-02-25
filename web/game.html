@@ -37,19 +37,20 @@
       position: absolute;
       top: 20px;
       left: 20px;
-      background: rgba(0, 0, 0, 0.7);
+      background: transparent;
       padding: 15px;
-      border-radius: 12px;
       color: white;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      -webkit-backdrop-filter: blur(10px);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       flex-direction: column;
       gap: 10px;
       z-index: 100;
       transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    #desktop-ui>* {
+      pointer-events: auto;
     }
 
     .ui-title {
@@ -57,7 +58,8 @@
       font-weight: 600;
       letter-spacing: 0.5px;
       text-transform: uppercase;
-      opacity: 0.8;
+      opacity: 0.5;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
     }
 
     .btn-toggle {
@@ -87,6 +89,8 @@
       border-top: 1px solid rgba(255, 255, 255, 0.1);
       margin-top: 5px;
       font-variant-numeric: tabular-nums;
+      opacity: 0.5;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
     }
 
     #status-indicator {
@@ -94,6 +98,8 @@
       align-items: center;
       gap: 8px;
       font-size: 13px;
+      opacity: 0.5;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
     }
 
     .status-dot {
@@ -108,8 +114,8 @@
     }
 
     #camera-preview {
-      width: 160px;
-      height: 120px;
+      width: 100px;
+      height: 75px;
       border-radius: 8px;
       overflow: hidden;
       background: #111;
@@ -134,8 +140,8 @@
       <video class="input-video"></video>
       <canvas class="output-canvas"></canvas>
     </div>
-    <button id="hand-tracking-btn" class="btn-toggle">Enable Hand Tracking</button>
-    <div id="speed-container">SPEED: <span id="speed-text">0</span> KM/H</div>
+    <button id="hand-tracking-btn" class="btn-toggle">Enable</button>
+
     <div id="status-indicator">
       <div class="status-dot"></div>
       <span id="status-text">Hand Tracking OFF</span>
