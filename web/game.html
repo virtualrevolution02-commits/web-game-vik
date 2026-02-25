@@ -274,21 +274,23 @@
     <div id="screen-signin" class="glass-panel">
       <div class="ob-title">Welcome Back</div>
       <div class="ob-subtitle">Sign in to sync your progress</div>
-      <input type="email" class="ob-input" placeholder="Email Address">
-      <input type="password" class="ob-input" placeholder="Password">
-      <button class="ob-btn" onclick="startGameFlow()">Play Game</button>
+      <input type="email" id="signin-email" class="ob-input" placeholder="Email Address">
+      <input type="password" id="signin-password" class="ob-input" placeholder="Password">
+      <button class="ob-btn" onclick="signIn()">Play Game</button>
       <div class="ob-link" onclick="switchScreen('screen-signup')">Don't have an account? Sign Up</div>
+      <div id="signin-error" style="color: #ef4444; font-size: 13px; margin-top: 10px;"></div>
     </div>
 
     <!-- SIGN UP SCREEN -->
     <div id="screen-signup" class="glass-panel">
       <div class="ob-title">Create Account</div>
       <div class="ob-subtitle">Join the worldwide leaderboard</div>
-      <input type="text" class="ob-input" placeholder="Driver Name">
-      <input type="email" class="ob-input" placeholder="Email Address">
-      <input type="password" class="ob-input" placeholder="Password">
-      <button class="ob-btn" onclick="startGameFlow()">Register & Play</button>
+      <input type="text" id="signup-name" class="ob-input" placeholder="Driver Name">
+      <input type="email" id="signup-email" class="ob-input" placeholder="Email Address">
+      <input type="password" id="signup-password" class="ob-input" placeholder="Password">
+      <button class="ob-btn" onclick="signUp()">Register & Play</button>
       <div class="ob-link" onclick="switchScreen('screen-signin')">Already have an account? Sign In</div>
+      <div id="signup-error" style="color: #ef4444; font-size: 13px; margin-top: 10px;"></div>
     </div>
 
   </div>
@@ -323,6 +325,77 @@
         // Tell the 3D game to actually start running
         if (window.start3DGame) window.start3DGame();
       }, 800);
+    }
+
+    async function signIn() {
+      const email = document.getElementById('signin-email').value;
+      const password = document.getElementById('signin-password').value;
+      const errorDiv = document.getElementById('signin-error');
+
+      if (!email || !password) {
+        errorDiv.textContent = 'Please fill in all fields';
+        return;
+      }
+
+      errorDiv.textContent = '';
+      try {
+        const btn = document.querySelector('#screen-signin .ob-btn');
+        const oldText = btn.textContent;
+        btn.textContent = 'Loading...';
+
+        const res = await fetch('/api/auth/signin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        btn.textContent = oldText;
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorDiv.textContent = data.error || 'Sign in failed';
+        } else {
+          startGameFlow();
+        }
+      } catch (err) {
+        errorDiv.textContent = 'Network error';
+      }
+    }
+
+    async function signUp() {
+      const name = document.getElementById('signup-name').value;
+      const email = document.getElementById('signup-email').value;
+      const password = document.getElementById('signup-password').value;
+      const errorDiv = document.getElementById('signup-error');
+
+      if (!email || !password || !name) {
+        errorDiv.textContent = 'Please fill in all fields';
+        return;
+      }
+
+      errorDiv.textContent = '';
+      try {
+        const btn = document.querySelector('#screen-signup .ob-btn');
+        const oldText = btn.textContent;
+        btn.textContent = 'Loading...';
+
+        const res = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+
+        btn.textContent = oldText;
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorDiv.textContent = data.error || 'Sign up failed';
+        } else {
+          startGameFlow();
+        }
+      } catch (err) {
+        errorDiv.textContent = 'Network error';
+      }
     }
   </script>
 
