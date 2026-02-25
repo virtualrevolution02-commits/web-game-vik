@@ -1254,17 +1254,28 @@
     // â”€â”€â”€ PHYSICS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function fixedUpdate(dt) {
         const v = vehicle, fwdX = Math.sin(v.heading), fwdZ = Math.cos(v.heading), rightX = Math.cos(v.heading), rightZ = -Math.sin(v.heading);
+        // Hand Tracking Override
+        let steerInput = 0;
+        if (handTracking.enabled) {
+            if (handTracking.handDetected) {
+                // Auto drive straight + Hand steering
+                input.up = true;
+                input.down = false; // ensure not braking
+                steerInput = Math.max(-1, Math.min(1, handTracking.steerValue));
+            } else {
+                // Hand Lost -> Stop the car
+                input.up = false;
+                input.down = true; // apply brakes unconditionally
+                steerInput = 0;
+            }
+        } else {
+            // Standard keyboard control
+            if (input.left) steerInput = 1; 
+            if (input.right) steerInput = -1;
+        }
+
         if (input.up) { const ac = 1.0 - (v.speed / CFG.TOP_SPEED) * 0.6; v.vel.x += fwdX * CFG.ACCEL * ac * dt; v.vel.z += fwdZ * CFG.ACCEL * ac * dt; }
         if (input.down) { v.vel.x -= fwdX * CFG.BRAKE * dt; v.vel.z -= fwdZ * CFG.BRAKE * dt; }
-
-        let steerInput = 0;
-        if (handTracking.enabled && handTracking.handDetected) {
-            // Auto drive straight + Hand steering
-            input.up = true;
-            steerInput = Math.max(-1, Math.min(1, handTracking.steerValue));
-        } else {
-            if (input.left) steerInput = 1; if (input.right) steerInput = -1;
-        }
 
         const speedRatio = Math.min(v.speed / CFG.TOP_SPEED, 1.0);
         let steerSpeed = CFG.STEER_SPEED * (1.0 - speedRatio * 0.55) + CFG.STEER_SPEED_HIGH * speedRatio * 0.55;
