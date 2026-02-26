@@ -63,12 +63,21 @@
 
     // Day/Night Cycle
     let dayNightRatio = 0.0; // 0 = Day, 1 = Night
+    let cyclePhase = 0.0;
     const DAY_SKY = new THREE.Color(0x87CEEB);
     const NIGHT_SKY = new THREE.Color(0x050510);
+    const SUNSET_SKY = new THREE.Color(0xFF6B4A);
+    const SUNRISE_SKY = new THREE.Color(0xFFB347);
+
     const DAY_LIGHT = new THREE.Color(0xFFFFFF);
     const NIGHT_LIGHT = new THREE.Color(0x445588);
+    const SUNSET_LIGHT = new THREE.Color(0xFFB89F);
+    const SUNRISE_LIGHT = new THREE.Color(0xFFE5B4);
+
     const DAY_HEMI_SKY = new THREE.Color(0x88bbff);
     const NIGHT_HEMI_SKY = new THREE.Color(0x112244);
+    const SUNSET_HEMI_SKY = new THREE.Color(0xFF9E80);
+    const SUNRISE_HEMI_SKY = new THREE.Color(0xFFD180);
 
     // Global Light Refs
     let dirLight, hemiLight, ambientLight;
@@ -116,9 +125,123 @@
 
     // Shared materials — moved to top for robust initialization
     const _treeTrunkMat = new THREE.MeshPhongMaterial({ color: 0x6B4F3A, flatShading: true });
-    const _treeFoliageMats = [0x4CAF50, 0x66BB6A, 0x388E3C, 0x2E7D32].map(c => new THREE.MeshPhongMaterial({ color: c, flatShading: true }));
+
+    // Wind Sway Shader Uniforms
+    const _windUniforms = {
+        uTime: { value: 0 },
+        uWindSpeed: { value: 0.8 },
+        uWindStrength: { value: 1.2 }
+    };
+
+    const _applyWindSway = (shader) => {
+        shader.uniforms.uTime = _windUniforms.uTime;
+        shader.uniforms.uWindSpeed = _windUniforms.uWindSpeed;
+        shader.uniforms.uWindStrength = _windUniforms.uWindStrength;
+        shader.vertexShader = `
+            uniform float uTime;
+            uniform float uWindSpeed;
+            uniform float uWindStrength;
+        ` + shader.vertexShader;
+        shader.vertexShader = shader.vertexShader.replace(
+            '#include <begin_vertex>',
+            `
+            #include <begin_vertex>
+            float swayTime = uTime * uWindSpeed;
+            // Multi-frequency wind for "gustiness"
+            float gust = sin(swayTime * 0.3) * 0.5 + 0.5;
+            float freq1 = sin(swayTime + position.y * 0.5 + modelMatrix[3][0] * 0.2);
+            float freq2 = sin(swayTime * 2.1 + position.y * 1.2 + modelMatrix[3][2] * 0.15) * 0.3;
+            float swayX = (freq1 + freq2) * uWindStrength * (position.y * 0.1) * (0.8 + gust * 0.4);
+            float swayZ = cos(swayTime * 0.7 + position.y * 0.4 + modelMatrix[3][2] * 0.25) * uWindStrength * (position.y * 0.08);
+            transformed.x += swayX;
+            transformed.z += swayZ;
+            `
+        );
+        shader.fragmentShader = `
+            uniform float uTime;
+        ` + shader.fragmentShader;
+        shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <dithering_fragment>',
+            `
+            #include <dithering_fragment>
+            // Subtle pulse to make foliage look "alive"
+            float pulse = sin(uTime * 0.5) * 0.05 + 0.95;
+            gl_FragColor.rgb *= pulse;
+            `
+        );
+    };
+
+    _treeTrunkMat.onBeforeCompile = _applyWindSway;
+
+    const _treeFoliageMats = [0x4CAF50, 0x66BB6A, 0x388E3C, 0x2E7D32].map(c => {
+        const mat = new THREE.MeshPhongMaterial({ color: c, flatShading: true });
+        mat.onBeforeCompile = _applyWindSway;
+        return mat;
+    });
+
+    // Leaf Particles
+    let leafPool;
+    function initLeafPool() {
+        const leafGeo = new THREE.PlaneGeometry(0.15, 0.15);
+        const leafMat = new THREE.MeshPhongMaterial({ color: 0x2E7D32, side: THREE.DoubleSide });
+        leafPool = {
+            count: 300,
+            mesh: new THREE.InstancedMesh(leafGeo, leafMat, 300),
+            active: new Array(300).fill(false),
+            life: new Float32Array(300),
+            positions: [],
+            velocities: [],
+            rotations: [],
+            nextIndex: 0
+        };
+        const dummy = new THREE.Matrix4(); dummy.makeScale(0, 0, 0);
+        for (let i = 0; i < 300; i++) {
+            leafPool.mesh.setMatrixAt(i, dummy);
+            leafPool.positions.push(new THREE.Vector3());
+            leafPool.velocities.push(new THREE.Vector3());
+            leafPool.rotations.push(new THREE.Vector3());
+        }
+        leafPool.mesh.instanceMatrix.needsUpdate = true;
+        leafPool.mesh.castShadow = true;
+        scene.add(leafPool.mesh);
+    }
+
+    function spawnLeaf(pos) {
+        const pool = leafPool, idx = pool.nextIndex; pool.nextIndex = (pool.nextIndex + 1) % pool.count;
+        pool.active[idx] = true; pool.life[idx] = 1.0;
+        pool.positions[idx].copy(pos);
+        pool.velocities[idx].set((Math.random() - 0.5) * 1.5, -0.5 - Math.random() * 1.0, (Math.random() - 0.5) * 1.5);
+        pool.rotations[idx].set(Math.random() * 6, Math.random() * 6, Math.random() * 6);
+    }
+
+    function updateLeaves(dt) {
+        const pool = leafPool, dummy = new THREE.Matrix4(); let anyUpdate = false;
+        const time = clock.getElapsedTime();
+        for (let i = 0; i < pool.count; i++) {
+            if (!pool.active[i]) continue; anyUpdate = true;
+            pool.life[i] -= dt * 0.3;
+            if (pool.life[i] <= 0 || pool.positions[i].y < 0.05) { pool.active[i] = false; dummy.makeScale(0, 0, 0); pool.mesh.setMatrixAt(i, dummy); continue; }
+
+            // Fluttering motion
+            pool.positions[i].x += Math.sin(time * 3 + i) * 0.05;
+            pool.positions[i].z += Math.cos(time * 2 + i) * 0.05;
+            pool.positions[i].add(pool.velocities[i].clone().multiplyScalar(dt));
+
+            pool.rotations[i].x += dt * 5;
+            pool.rotations[i].z += dt * 3;
+
+            dummy.makeRotationFromEuler(new THREE.Euler(pool.rotations[i].x, pool.rotations[i].y, pool.rotations[i].z));
+            dummy.setPosition(pool.positions[i]);
+            pool.mesh.setMatrixAt(i, dummy);
+        }
+        if (anyUpdate) pool.mesh.instanceMatrix.needsUpdate = true;
+    }
     const _rockMats = [0x8E8E8E, 0xA0A0A0, 0x707070, 0x959595].map(c => new THREE.MeshPhongMaterial({ color: c, flatShading: true }));
-    const _bushMats = [0x558B2F, 0x689F38, 0x7CB342, 0x33691E].map(c => new THREE.MeshPhongMaterial({ color: c, flatShading: true }));
+    const _bushMats = [0x558B2F, 0x689F38, 0x7CB342, 0x33691E].map(c => {
+        const mat = new THREE.MeshPhongMaterial({ color: c, flatShading: true });
+        mat.onBeforeCompile = _applyWindSway;
+        return mat;
+    });
     const _coneMat = new THREE.MeshPhongMaterial({ color: 0xFF6D00, flatShading: true });
     const _coneStripeMat = new THREE.MeshPhongMaterial({ color: 0xFFFFFF, flatShading: true });
     const _crateMat = new THREE.MeshPhongMaterial({ color: 0xBCAAA4, flatShading: true });
@@ -211,7 +334,8 @@
         renderer.setPixelRatio(1);
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setClearColor(CFG.BG_COLOR);
-        renderer.shadowMap.enabled = false;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
         scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(CFG.BG_COLOR, 0.012);
@@ -233,6 +357,17 @@
         scene.add(ambientLight);
         dirLight = new THREE.DirectionalLight(0xffffff, 0.75);
         dirLight.position.set(20, 40, 20);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        dirLight.shadow.camera.left = -50;
+        dirLight.shadow.camera.right = 50;
+        dirLight.shadow.camera.top = 50;
+        dirLight.shadow.camera.bottom = -50;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 150;
+        dirLight.shadow.bias = -0.0005;
+        dirLight.shadow.radius = 4; // Softer shadows
         scene.add(dirLight);
 
         // Subtle hemisphere light for ground tint
@@ -245,6 +380,7 @@
         initRoad();
         initParticlePool();
         initFoliageInstancing();
+        initLeafPool();
         setupInput();
         initHandTracking();
 
@@ -274,6 +410,7 @@
         groundMesh = new THREE.Mesh(geo, mat);
         groundMesh.rotation.x = -Math.PI / 2;
         groundMesh.position.y = -0.02;
+        groundMesh.receiveShadow = true;
         scene.add(groundMesh);
 
         const gridGeo = new THREE.PlaneGeometry(600, 600, 40, 40);
@@ -493,6 +630,13 @@
             carGroup.add(handle2);
         }
 
+        carGroup.traverse(c => {
+            if (c.isMesh) {
+                c.castShadow = true;
+                c.receiveShadow = true;
+            }
+        });
+
         scene.add(carGroup);
     }
 
@@ -570,18 +714,66 @@
         }
 
         // Interpolate Global Colors based on Day/Night
-        const targetSky = DAY_SKY.clone().lerp(NIGHT_SKY, dayNightRatio);
+        let targetSky, currentLight, currentHemi;
+
+        if (cyclePhase < 0.4) {
+            targetSky = DAY_SKY.clone();
+            currentLight = DAY_LIGHT.clone();
+            currentHemi = DAY_HEMI_SKY.clone();
+        } else if (cyclePhase < 0.45) {
+            let t = (cyclePhase - 0.4) / 0.05;
+            targetSky = DAY_SKY.clone().lerp(SUNSET_SKY, t);
+            currentLight = DAY_LIGHT.clone().lerp(SUNSET_LIGHT, t);
+            currentHemi = DAY_HEMI_SKY.clone().lerp(SUNSET_HEMI_SKY, t);
+        } else if (cyclePhase < 0.5) {
+            let t = (cyclePhase - 0.45) / 0.05;
+            targetSky = SUNSET_SKY.clone().lerp(NIGHT_SKY, t);
+            currentLight = SUNSET_LIGHT.clone().lerp(NIGHT_LIGHT, t);
+            currentHemi = SUNSET_HEMI_SKY.clone().lerp(NIGHT_HEMI_SKY, t);
+        } else if (cyclePhase < 0.9) {
+            targetSky = NIGHT_SKY.clone();
+            currentLight = NIGHT_LIGHT.clone();
+            currentHemi = NIGHT_HEMI_SKY.clone();
+        } else if (cyclePhase < 0.95) {
+            let t = (cyclePhase - 0.9) / 0.05;
+            targetSky = NIGHT_SKY.clone().lerp(SUNRISE_SKY, t);
+            currentLight = NIGHT_LIGHT.clone().lerp(SUNRISE_LIGHT, t);
+            currentHemi = NIGHT_HEMI_SKY.clone().lerp(SUNRISE_HEMI_SKY, t);
+        } else {
+            let t = (cyclePhase - 0.95) / 0.05;
+            targetSky = SUNRISE_SKY.clone().lerp(DAY_SKY, t);
+            currentLight = SUNRISE_LIGHT.clone().lerp(DAY_LIGHT, t);
+            currentHemi = SUNRISE_HEMI_SKY.clone().lerp(DAY_HEMI_SKY, t);
+        }
+
         renderer.setClearColor(targetSky);
         scene.fog.color.copy(targetSky);
         scene.fog.density = 0.012 + (dayNightRatio * 0.005);
 
-        const currentLight = DAY_LIGHT.clone().lerp(NIGHT_LIGHT, dayNightRatio);
         dirLight.color.copy(currentLight);
         dirLight.intensity = (0.75 - (dayNightRatio * 0.5));
+
+        // Update shadow light position to follow the sun relative to the car
+        const sunDist = 80;
+        dirLight.position.set(
+            vehicle.pos.x + 60,
+            55 - (dayNightRatio * 80),
+            vehicle.pos.z - 40
+        );
+        dirLight.target.position.copy(vehicle.pos);
+        dirLight.target.updateMatrixWorld();
+
+        // Subtle shadow jitter to simulate wind movement in foliage
+        const jitter = 0.05 * Math.sin(clock.getElapsedTime() * 2.0);
+        dirLight.shadow.camera.left = -50 + jitter;
+        dirLight.shadow.camera.right = 50 + jitter;
+        dirLight.shadow.camera.updateProjectionMatrix();
+
+        _windUniforms.uTime.value = clock.getElapsedTime();
+
         ambientLight.color.copy(currentLight);
         ambientLight.intensity = (0.65 - (dayNightRatio * 0.4));
 
-        const currentHemi = DAY_HEMI_SKY.clone().lerp(NIGHT_HEMI_SKY, dayNightRatio);
         hemiLight.color.copy(currentHemi);
     }
 
@@ -962,6 +1154,14 @@
 
         const scale = 0.7 + rng() * 1.2; group.scale.set(scale, scale, scale);
         group.rotation.y = rng() * Math.PI * 2;
+
+        group.traverse(c => {
+            if (c.isMesh) {
+                c.castShadow = true;
+                c.receiveShadow = true;
+            }
+        });
+
         return group;
     }
 
@@ -1321,15 +1521,18 @@
     function updateVisuals(dt) {
         const v = vehicle;
 
-        // Calculate Day/Night Transition (distance driven: 0 -> 300 is day, 300->1000 transition, 1000+ is night)
-        // Adjust these values to make night come much faster, e.g. 500 transition point
-        const totalDist = v.distTravelled;
-        if (totalDist < 300) {
+        // Calculate Day/Night Transition (looping)
+        const CYCLE_LENGTH = 2000;
+        cyclePhase = (v.distTravelled % CYCLE_LENGTH) / CYCLE_LENGTH;
+
+        if (cyclePhase < 0.4) {
             dayNightRatio = 0.0;
-        } else if (totalDist < 1000) {
-            dayNightRatio = (totalDist - 300) / 700.0;
-        } else {
+        } else if (cyclePhase < 0.5) {
+            dayNightRatio = (cyclePhase - 0.4) / 0.1;
+        } else if (cyclePhase < 0.9) {
             dayNightRatio = 1.0;
+        } else {
+            dayNightRatio = 1.0 - ((cyclePhase - 0.9) / 0.1);
         }
 
         carGroup.position.set(v.pos.x, 0, v.pos.z); carGroup.rotation.y = v.heading;
@@ -1368,7 +1571,23 @@
         gridMesh.position.x = v.pos.x; gridMesh.position.z = v.pos.z;
         worldUpdateTimer += dt;
         if (worldUpdateTimer > 0.3) { worldUpdateTimer = 0; updateRoad(); updateWorldObjects(); }
-        updateAtmosphere(dt); updateParticles(dt); updateAudio();
+        updateAtmosphere(dt); updateParticles(dt); updateLeaves(dt); updateAudio();
+
+        // Spawn occasional leaves from nearby trees
+        if (Math.random() < 0.05) {
+            for (const [key, cellData] of worldObjects) {
+                const meshes = cellData.meshes || [];
+                for (let i = 0; i < meshes.length; i++) {
+                    if (meshes[i].userData.type === 'tree') {
+                        const dist = meshes[i].position.distanceTo(vehicle.pos);
+                        if (dist < 40 && Math.random() < 0.1) {
+                            const leafPos = meshes[i].position.clone().add(new THREE.Vector3((Math.random() - 0.5) * 4, 3 + Math.random() * 4, (Math.random() - 0.5) * 4));
+                            spawnLeaf(leafPos);
+                        }
+                    }
+                }
+            }
+        }
 
         // Update Shader Uniforms
         _grassUniforms.uCarPosition.value.copy(vehicle.pos);

@@ -60,12 +60,21 @@
 
     // Day/Night Cycle
     let dayNightRatio = 0.0; // 0 = Day, 1 = Night
+    let cyclePhase = 0.0;
     const DAY_SKY = new THREE.Color(0x3B76F6);
     const NIGHT_SKY = new THREE.Color(0x050510);
+    const SUNSET_SKY = new THREE.Color(0xFF6B4A);
+    const SUNRISE_SKY = new THREE.Color(0xFFB347);
+
     const DAY_LIGHT = new THREE.Color(0xFFFFFF);
     const NIGHT_LIGHT = new THREE.Color(0x445588);
+    const SUNSET_LIGHT = new THREE.Color(0xFFB89F);
+    const SUNRISE_LIGHT = new THREE.Color(0xFFE5B4);
+
     const DAY_HEMI_SKY = new THREE.Color(0x88bbff);
     const NIGHT_HEMI_SKY = new THREE.Color(0x112244);
+    const SUNSET_HEMI_SKY = new THREE.Color(0xFF9E80);
+    const SUNRISE_HEMI_SKY = new THREE.Color(0xFFD180);
 
     // Global Light Refs
     let dirLight, hemiLight, ambientLight;
@@ -549,18 +558,47 @@
         }
 
         // Interpolate Global Colors
-        const currentSky = DAY_SKY.clone().lerp(NIGHT_SKY, dayNightRatio);
+        let currentSky, currentLight, currentHemi;
+
+        if (cyclePhase < 0.4) {
+            currentSky = DAY_SKY.clone();
+            currentLight = DAY_LIGHT.clone();
+            currentHemi = DAY_HEMI_SKY.clone();
+        } else if (cyclePhase < 0.45) {
+            let t = (cyclePhase - 0.4) / 0.05;
+            currentSky = DAY_SKY.clone().lerp(SUNSET_SKY, t);
+            currentLight = DAY_LIGHT.clone().lerp(SUNSET_LIGHT, t);
+            currentHemi = DAY_HEMI_SKY.clone().lerp(SUNSET_HEMI_SKY, t);
+        } else if (cyclePhase < 0.5) {
+            let t = (cyclePhase - 0.45) / 0.05;
+            currentSky = SUNSET_SKY.clone().lerp(NIGHT_SKY, t);
+            currentLight = SUNSET_LIGHT.clone().lerp(NIGHT_LIGHT, t);
+            currentHemi = SUNSET_HEMI_SKY.clone().lerp(NIGHT_HEMI_SKY, t);
+        } else if (cyclePhase < 0.9) {
+            currentSky = NIGHT_SKY.clone();
+            currentLight = NIGHT_LIGHT.clone();
+            currentHemi = NIGHT_HEMI_SKY.clone();
+        } else if (cyclePhase < 0.95) {
+            let t = (cyclePhase - 0.9) / 0.05;
+            currentSky = NIGHT_SKY.clone().lerp(SUNRISE_SKY, t);
+            currentLight = NIGHT_LIGHT.clone().lerp(SUNRISE_LIGHT, t);
+            currentHemi = NIGHT_HEMI_SKY.clone().lerp(SUNRISE_HEMI_SKY, t);
+        } else {
+            let t = (cyclePhase - 0.95) / 0.05;
+            currentSky = SUNRISE_SKY.clone().lerp(DAY_SKY, t);
+            currentLight = SUNRISE_LIGHT.clone().lerp(DAY_LIGHT, t);
+            currentHemi = SUNRISE_HEMI_SKY.clone().lerp(DAY_HEMI_SKY, t);
+        }
+
         renderer.setClearColor(currentSky);
         scene.fog.color.copy(currentSky);
         scene.fog.density = 0.012 + (dayNightRatio * 0.005); // slightly thicker fog at night
 
-        const currentLight = DAY_LIGHT.clone().lerp(NIGHT_LIGHT, dayNightRatio);
         dirLight.color.copy(currentLight);
         dirLight.intensity = 0.75 - (dayNightRatio * 0.5);
         ambientLight.color.copy(currentLight);
         ambientLight.intensity = 0.65 - (dayNightRatio * 0.4);
 
-        const currentHemi = DAY_HEMI_SKY.clone().lerp(NIGHT_HEMI_SKY, dayNightRatio);
         hemiLight.color.copy(currentHemi);
     }
 
@@ -1166,15 +1204,18 @@
     function updateVisuals(dt) {
         const v = vehicle;
 
-        // Calculate Day/Night Transition (distance driven: 0 -> 300 is day, 300->1000 transition, 1000+ is night)
-        // Adjust these values to make night come much faster, e.g. 500 transition point
-        const totalDist = v.distTravelled;
-        if (totalDist < 300) {
+        // Calculate Day/Night Transition (looping)
+        const CYCLE_LENGTH = 2000;
+        cyclePhase = (v.distTravelled % CYCLE_LENGTH) / CYCLE_LENGTH;
+
+        if (cyclePhase < 0.4) {
             dayNightRatio = 0.0;
-        } else if (totalDist < 1000) {
-            dayNightRatio = (totalDist - 300) / 700.0;
-        } else {
+        } else if (cyclePhase < 0.5) {
+            dayNightRatio = (cyclePhase - 0.4) / 0.1;
+        } else if (cyclePhase < 0.9) {
             dayNightRatio = 1.0;
+        } else {
+            dayNightRatio = 1.0 - ((cyclePhase - 0.9) / 0.1);
         }
 
         carGroup.position.set(v.pos.x, 0, v.pos.z); carGroup.rotation.y = v.heading;
