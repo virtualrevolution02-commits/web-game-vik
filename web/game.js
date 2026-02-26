@@ -1404,9 +1404,9 @@
                 const dy = rightHand.y - leftHand.y;
 
                 // dy > 0 means right hand is lower than left hand (steering right)
-                // In game, right steering means steerValue is negative.
-                // Multiplying by 15 for extreme sensitivity/accuracy as requested.
-                handTracking.steerValue = -(dy / Math.max(dx, 0.1)) * 15.0;
+                // Inverted: dy > 0 now steers Right (negative value in game)
+                // We remove the '-' sign to flip the direction
+                handTracking.steerValue = (dy / Math.max(dx, 0.1)) * 15.0;
                 handTracking.lastX = (leftHand.x + rightHand.x) / 2;
             } else {
                 // One Hand Logic
@@ -1414,8 +1414,8 @@
                 const x = landmarks[9].x;
                 handTracking.lastX = x;
 
-                // Increased sensitivity multiplier for extreme accuracy
-                handTracking.steerValue = (0.5 - x) * 15.0;
+                // Inverted: (x - 0.5) instead of (0.5 - x) to flip steering
+                handTracking.steerValue = (x - 0.5) * 15.0;
             }
         } else {
             handTracking.handDetected = false;
