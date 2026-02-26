@@ -2,7 +2,7 @@
     "name": "web-game-vik",
     "version": "1.0.0",
     "scripts": {
-        "build": "if [ ! -d \"$HOME/flutter\" ]; then git clone https://github.com/flutter/flutter.git -b stable --depth 1 $HOME/flutter; fi && $HOME/flutter/bin/flutter build web --release"
+        "build": "if [ ! -d \"$HOME/flutter\" ]; then git clone https://github.com/flutter/flutter.git -b stable --depth 1 $HOME/flutter; fi && $HOME/flutter/bin/flutter build web --release && cp web/game.html build/web/ && cp web/game.js build/web/"
     },
     "dependencies": {
         "bcryptjs": "^2.4.3",
