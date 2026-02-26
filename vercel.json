@@ -4,7 +4,15 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/game.html",
+      "destination": "/game.html"
+    },
+    {
+      "source": "/((?!api/|game.html).*)",
       "destination": "/index.html"
     }
   ]

@@ -18,9 +18,11 @@ const initDB = async () => {
       );
     `);
         client.release();
-        console.log("DB Initialized");
+        console.log("DB Initialized successfully: 'users' table is ready.");
     } catch (err) {
-        console.error("DB Initialization error", err);
+        console.error("DB Initialization error - could not connect or create table:", err);
+        console.error("Please ensure your database is accessible and the connection string is correct.");
+        console.error("Check if DATABASE_URL is set correctly in Vercel env vars.");
     }
 };
 

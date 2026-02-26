@@ -370,11 +370,13 @@
           // Save session
           if (data.user) {
             localStorage.setItem('vistara_user', JSON.stringify(data.user));
+            console.log('User signed in:', data.user.name);
           }
           startGameFlow();
         }
       } catch (err) {
-        errorDiv.textContent = 'Network error';
+        console.error('Signin fetch error:', err);
+        errorDiv.textContent = 'Connection error. Is the backend deployed?';
       }
     }
 
@@ -410,11 +412,13 @@
           // Save session
           if (data.user) {
             localStorage.setItem('vistara_user', JSON.stringify(data.user));
+            console.log('User registered:', data.user.name);
           }
           startGameFlow();
         }
       } catch (err) {
-        errorDiv.textContent = 'Network error';
+        console.error('Signup fetch error:', err);
+        errorDiv.textContent = 'Connection error. Is the backend deployed?';
       }
     }
 
