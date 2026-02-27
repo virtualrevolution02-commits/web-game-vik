@@ -59,6 +59,7 @@
             font-weight: 700;
             background: linear-gradient(90deg, #10B981, #3B82F6);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: 1px;
         }
@@ -89,197 +90,145 @@
         .controller-area {
             flex: 1;
             display: flex;
-            position: relative;
-        }
-
-        .steer-buttons-container {
-            flex: 1;
-            display: flex;
-            justify-content: space-around;
+            flex-direction: column;
             align-items: center;
-            padding: 20px;
-        }
-
-        .steer-btn {
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 2px solid var(--glass-border);
-            color: var(--accent);
-            font-size: 2rem;
-            display: flex;
             justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+            position: relative;
+            padding-bottom: 20px;
         }
 
-        .steer-btn:active,
-        .steer-btn.active-touch {
-            background: rgba(16, 185, 129, 0.3);
-            transform: scale(0.95);
-            box-shadow: 0 0 20px var(--accent-dim);
-        }
-
-        .gear-container {
-            width: 100px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-left: 1px solid var(--glass-border);
+        /* --- Steer Section --- */
+        .steer-section {
+            width: 100%;
+            max-width: 400px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between;
-            padding: 30px 0;
-            z-index: 10;
+            gap: 15px;
         }
 
-        .gear-label {
-            font-size: 0.9rem;
+        .steer-labels {
+            width: 85%;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
             color: var(--text-dim);
-            font-weight: 600;
-            text-transform: uppercase;
+            font-weight: 700;
             letter-spacing: 1px;
         }
 
-        .gear-slider-track {
-            width: 40px;
-            flex: 1;
-            margin: 20px 0;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 20px;
-            border: 1px solid var(--glass-border);
-            position: relative;
+        .steer-control {
             display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 15px 0;
-        }
-
-        .gear-notch {
-            width: 100%;
-            height: 2px;
-            background: var(--glass-border);
-            position: relative;
-        }
-
-        .gear-notch::after {
-            content: attr(data-gear);
-            position: absolute;
-            left: -25px;
-            top: -8px;
-            font-size: 0.8rem;
-            color: var(--text-dim);
-            font-weight: bold;
-        }
-
-        .gear-knob {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, #2a2d35, #1d2025);
-            border: 2px solid var(--glass-border);
-            border-radius: 50%;
-            position: absolute;
-            left: -6px;
-            bottom: 0%;
-            /* 0% = Gear 1, 50% = Gear 2, 100% = Gear 3 (adjusted for centering) */
-            transform: translateY(50%);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.1);
-            display: flex;
-            justify-content: center;
             align-items: center;
-            color: var(--accent);
-            font-weight: bold;
-            font-size: 1.2rem;
-            transition: bottom 0.2s cubic-bezier(0.2, 0.8, 0.2, 1.2), box-shadow 0.2s;
-        }
-
-        .gear-knob.active {
-            box-shadow: 0 0 20px var(--accent-dim), inset 0 2px 4px rgba(255, 255, 255, 0.2);
-        }
-
-        /* Screen overlay for connection errors */
-        #overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
             width: 100%;
-            height: 100%;
-            background: rgba(13, 17, 23, 0.95);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
             justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 20px;
-            transition: opacity 0.5s;
+            gap: 10px;
         }
 
-        .overlay-hidden {
-            opacity: 0;
-            pointer-events: none;
+        .arrow {
+            width: 24px;
+            height: 24px;
+            stroke: #8b949e;
+            opacity: 0.7;
+            margin-top: -15px;
         }
 
-        #overlay-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid var(--glass-border);
-            border-top-color: var(--accent);
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 260px;
+            height: 14px;
+            background: #1d2128;
+            border-radius: 8px;
+            outline: none;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+            transition: background 0.1s;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        #overlay-message {
-            font-size: 1.2rem;
-            margin-bottom: 10px;
-        }
-
-        #overlay-submessage {
-            font-size: 0.9rem;
-            color: var(--text-dim);
-        }
-
-        /* Motion Toggle */
-        .motion-toggle-container {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 20;
-        }
-
-        .motion-toggle-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid var(--glass-border);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
+            background: radial-gradient(circle at center, #5eead4 0%, #5eead4 25%, #2a303c 26%, #2a303c 100%);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
             cursor: pointer;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            font-weight: 600;
-            font-size: 0.9rem;
+        }
+
+        /* --- Gear Buttons --- */
+        .gear-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 40px;
+        }
+
+        .gear-btn {
+            width: 45px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
             transition: all 0.2s;
         }
 
-        .motion-toggle-btn.active {
-            background: var(--accent);
-            border-color: var(--accent);
-            box-shadow: 0 0 15px var(--accent-dim);
+        .gear-btn.active {
+            border-color: #5eead4;
+            color: #5eead4;
+            box-shadow: 0 0 15px rgba(94, 234, 212, 0.2), inset 0 0 8px rgba(94, 234, 212, 0.1);
+        }
+
+        /* --- Mode Toggle --- */
+        .mode-toggle {
+            display: flex;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 25px;
+            padding: 4px;
+            margin-top: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .mode-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mode-tab svg {
+            opacity: 0.7;
+            width: 18px;
+            height: 18px;
+        }
+
+        .mode-tab.active {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .mode-tab.active svg {
+            opacity: 1;
+            color: #5eead4;
         }
 
         /* Camera Preview */
@@ -287,15 +236,16 @@
             position: absolute;
             top: 70px;
             left: 20px;
-            width: 120px;
-            height: 90px;
-            background: #000;
+            width: 100px;
+            height: 75px;
+            background: #111;
             border-radius: 10px;
             border: 1px solid var(--glass-border);
             overflow: hidden;
             display: none;
             z-index: 15;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
         }
 
         .input-video {
@@ -319,11 +269,6 @@
         <div id="overlay-submessage">Make sure the desktop game is open</div>
     </div>
 
-    <div class="motion-toggle-container">
-        <button id="motion-toggle-btn" class="motion-toggle-btn">Camera 📷</button>
-    </div>
-
-    <!-- Camera Preview for Hand Tracking -->
     <div id="camera-preview">
         <video class="input-video"></video>
         <canvas class="output-canvas"></canvas>
@@ -339,24 +284,54 @@
 
     <div class="controller-area">
 
-        <!-- Steering Buttons -->
-        <div class="steer-buttons-container">
-            <button class="steer-btn" id="btn-left">◀</button>
-            <button class="steer-btn" id="btn-right">▶</button>
+        <!-- Steer Section -->
+        <div class="steer-section">
+            <div class="steer-labels">
+                <span>LEFT TURN</span>
+                <span>RIGHT TURN</span>
+            </div>
+            <div class="steer-control">
+                <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 4 C 15 12, 12 16, 5 16 M5 16 L 9 12 M5 16 L 9 20" />
+                </svg>
+                <input type="range" min="-1" max="1" step="0.01" value="0" id="steer-slider"
+                    aria-label="Steering Control">
+                <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 4 C 9 12, 12 16, 19 16 M19 16 L 15 12 M19 16 L 15 20" />
+                </svg>
+            </div>
         </div>
 
-        <!-- Gear Shifter -->
-        <div class="gear-container">
-            <div class="gear-label">Speed</div>
+        <!-- Gear Section -->
+        <div class="gear-buttons">
+            <div class="gear-btn active" data-gear="0">P</div>
+            <div class="gear-btn" data-gear="1">1</div>
+            <div class="gear-btn" data-gear="2">2</div>
+            <div class="gear-btn" data-gear="3">3</div>
+        </div>
 
-            <div class="gear-slider-track" id="gear-slider-track">
-                <!-- Visual Notches for gears 3, 2, 1, 0 (top to bottom) -->
-                <div class="gear-notch" data-gear="3"></div>
-                <div class="gear-notch" data-gear="2"></div>
-                <div class="gear-notch" data-gear="1"></div>
-                <div class="gear-notch" data-gear="P"></div>
-
-                <div class="gear-knob" id="gear-knob" style="bottom: 0%;">P</div>
+        <!-- Mode Toggle -->
+        <div class="mode-toggle">
+            <div class="mode-tab active" id="tab-slider">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <line x1="4" y1="12" x2="20" y2="12"></line>
+                    <line x1="4" y1="6" x2="20" y2="6"></line>
+                    <line x1="4" y1="18" x2="20" y2="18"></line>
+                    <circle cx="10" cy="12" r="3" fill="currentColor"></circle>
+                </svg>
+                SLIDER
+            </div>
+            <div class="mode-tab" id="tab-motion">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                    <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                    <path d="M3 12h-1m16 0h-1m-7-5v-1m0 12v-1"></path>
+                </svg>
+                MOTION
             </div>
         </div>
 

@@ -89,37 +89,41 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay.classList.add('overlay-hidden');
     }
 
-    // --- Steering Buttons Setup ---
-    const btnLeft = document.getElementById('btn-left');
-    const btnRight = document.getElementById('btn-right');
+    // --- Steer Slider Setup ---
+    const steerSlider = document.getElementById('steer-slider');
 
-    function handleSteer(val, btn) {
-        state.steer = val;
-        btn.classList.add('active-touch');
-        if (navigator.vibrate) navigator.vibrate(15);
+    function updateSliderBackground(val) {
+        // val is -1 to 1. Map -1 to 0%, 1 to 100%
+        const percent = ((parseFloat(val) + 1) / 2) * 100;
+        // The teal fill grows from the left side up to the thumb
+        steerSlider.style.background = `linear-gradient(to right, #5eead4 0%, #5eead4 ${percent}%, #1d2128 ${percent}%, #1d2128 100%)`;
     }
 
-    function resetSteer(btn) {
-        state.steer = 0;
-        btn.classList.remove('active-touch');
+    // Initialize background
+    updateSliderBackground(0);
+
+    steerSlider.addEventListener('input', (e) => {
+        if (state.motionEnabled) {
+            e.preventDefault();
+            return;
+        }
+        state.steer = parseFloat(e.target.value);
+        updateSliderBackground(state.steer);
+    });
+
+    function resetSlider() {
+        if (!state.motionEnabled) {
+            state.steer = 0;
+            steerSlider.value = 0;
+            updateSliderBackground(0);
+        }
     }
 
-    // Left Button
-    btnLeft.addEventListener('mousedown', () => { if (!state.motionEnabled) handleSteer(-1, btnLeft) });
-    btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); if (!state.motionEnabled) handleSteer(-1, btnLeft) }, { passive: false });
-    btnLeft.addEventListener('mouseup', () => { if (!state.motionEnabled) resetSteer(btnLeft) });
-    btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); if (!state.motionEnabled) resetSteer(btnLeft) }, { passive: false });
-    btnLeft.addEventListener('mouseleave', () => { if (!state.motionEnabled) resetSteer(btnLeft) });
-
-    // Right Button
-    btnRight.addEventListener('mousedown', () => { if (!state.motionEnabled) handleSteer(1, btnRight) });
-    btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); if (!state.motionEnabled) handleSteer(1, btnRight) }, { passive: false });
-    btnRight.addEventListener('mouseup', () => { if (!state.motionEnabled) resetSteer(btnRight) });
-    btnRight.addEventListener('touchend', (e) => { e.preventDefault(); if (!state.motionEnabled) resetSteer(btnRight) }, { passive: false });
-    btnRight.addEventListener('mouseleave', () => { if (!state.motionEnabled) resetSteer(btnRight) });
+    steerSlider.addEventListener('touchend', resetSlider);
+    steerSlider.addEventListener('mouseup', resetSlider);
+    steerSlider.addEventListener('mouseleave', resetSlider);
 
     // --- MediaPipe Hand Tracking Setup ---
-    const motionBtn = document.getElementById('motion-toggle-btn');
     const cameraPreview = document.getElementById('camera-preview');
     const videoElement = document.querySelector('.input-video');
     const canvasElement = document.querySelector('.output-canvas');
@@ -128,35 +132,36 @@ document.addEventListener('DOMContentLoaded', () => {
     let camera = null;
     let hands = null;
 
-    motionBtn.addEventListener('click', toggleMotionControl);
-
-    function toggleMotionControl() {
-        state.motionEnabled = !state.motionEnabled;
+    function toggleMotionMode(enable) {
+        state.motionEnabled = enable;
 
         if (state.motionEnabled) {
-            motionBtn.classList.add('active');
+            tabMotion.classList.add('active');
+            tabSlider.classList.remove('active');
             cameraPreview.style.display = 'block';
-            motionBtn.textContent = 'Camera ON 🟢';
             initMediaPipe();
 
-            // Visual feedback on buttons
-            btnLeft.style.opacity = '0.3';
-            btnRight.style.opacity = '0.3';
-            state.steer = 0; // reset manual steer
+            // Visual feedback on slider
+            steerSlider.style.opacity = '0.4';
+            steerSlider.style.pointerEvents = 'none'; // let the camera drive it
+
+            if (navigator.vibrate) navigator.vibrate(20);
         } else {
-            motionBtn.classList.remove('active');
+            tabSlider.classList.add('active');
+            tabMotion.classList.remove('active');
             cameraPreview.style.display = 'none';
-            motionBtn.textContent = 'Camera 📷';
 
             if (camera) {
                 camera.stop();
             }
 
-            // Restore buttons
-            btnLeft.style.opacity = '1';
-            btnRight.style.opacity = '1';
-            state.steer = 0;
+            // Restore slider
+            steerSlider.style.opacity = '1';
+            steerSlider.style.pointerEvents = 'auto';
+            resetSlider();
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            if (navigator.vibrate) navigator.vibrate(20);
         }
     }
 
@@ -245,37 +250,34 @@ document.addEventListener('DOMContentLoaded', () => {
             state.steer = 0;
         }
         canvasCtx.restore();
+
+        // Update the visual slider to reflect motion steering!
+        steerSlider.value = state.steer;
+        updateSliderBackground(state.steer);
     }
 
-    // --- Gear Shifter Setup ---
-    const track = document.getElementById('gear-slider-track');
-    const knob = document.getElementById('gear-knob');
-    let isDraggingGear = false;
-    let trackRect = null;
+    // --- Mode Toggle Setup ---
+    const tabSlider = document.getElementById('tab-slider');
+    const tabMotion = document.getElementById('tab-motion');
 
-    // touch/mouse events for gear
-    track.addEventListener('mousedown', startGearDrag);
-    track.addEventListener('touchstart', (e) => startGearDrag(e.touches[0]), { passive: false });
+    tabMotion.addEventListener('click', () => {
+        if (!state.motionEnabled) toggleMotionMode(true);
+    });
+    tabSlider.addEventListener('click', () => {
+        if (state.motionEnabled) toggleMotionMode(false);
+    });
 
-    window.addEventListener('mousemove', dragGear);
-    window.addEventListener('touchmove', (e) => {
-        if (isDraggingGear) e.preventDefault(); // prevent scrolling
-        dragGear(e.touches[0]);
-    }, { passive: false });
-
-    window.addEventListener('mouseup', endGearDrag);
-    window.addEventListener('touchend', endGearDrag);
+    // --- Gear Buttons Setup ---
+    const gearBtns = document.querySelectorAll('.gear-btn');
 
     function setGear(gearLevel) {
         state.gear = gearLevel;
-        knob.textContent = gearLevel === 0 ? 'P' : gearLevel;
 
-        // Update visual position (0% = Gear P, 33% = Gear 1, 66% = Gear 2, 100% = Gear 3)
-        // Note: 'bottom' percentage.
-        if (gearLevel === 0) knob.style.bottom = "0%";
-        else if (gearLevel === 1) knob.style.bottom = "33%";
-        else if (gearLevel === 2) knob.style.bottom = "66%";
-        else if (gearLevel === 3) knob.style.bottom = "100%";
+        gearBtns.forEach(btn => btn.classList.remove('active'));
+
+        // Find the button with matching data-gear value
+        const activeBtn = document.querySelector(`.gear-btn[data-gear="${gearLevel}"]`);
+        if (activeBtn) activeBtn.classList.add('active');
 
         // Haptic feedback if supported
         if (navigator.vibrate) {
@@ -283,42 +285,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function startGearDrag(e) {
-        isDraggingGear = true;
-        trackRect = track.getBoundingClientRect();
-        knob.classList.add('active');
-        dragGear(e);
-    }
+    // Initialize gear to 'P' (0)
+    setGear(0);
 
-    function dragGear(e) {
-        if (!isDraggingGear || !e) return;
-
-        // Calculate Y position relative to track
-        const y = e.clientY - trackRect.top;
-        const height = trackRect.height;
-
-        // Invert Y so 0 is bottom, 1 is top
-        let ratio = 1 - (y / height);
-        ratio = Math.max(0, Math.min(1, ratio));
-
-        // Snap to nearest gear zone (P: 0-0.25, 1: 0.25-0.5, 2: 0.5-0.75, 3: 0.75-1.0)
-        let newGear = 0;
-        if (ratio > 0.8) newGear = 3;
-        else if (ratio > 0.5) newGear = 2;
-        else if (ratio > 0.2) newGear = 1;
-
-        if (newGear !== state.gear) {
-            setGear(newGear);
-        }
-    }
-
-    function endGearDrag() {
-        if (isDraggingGear) {
-            isDraggingGear = false;
-            knob.classList.remove('active');
-            // snap visually to the strict gear position
-            setGear(state.gear);
-        }
-    }
+    gearBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            let gearVal = btn.getAttribute('data-gear');
+            setGear(parseInt(gearVal));
+        });
+    });
 
 });
