@@ -88,35 +88,34 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay.classList.add('overlay-hidden');
     }
 
-    // --- Joystick (nipplejs) Setup ---
-    const joystickZone = document.getElementById('joystick-zone');
-    const manager = nipplejs.create({
-        zone: joystickZone,
-        mode: 'dynamic',
-        position: { left: '50%', top: '50%' },
-        color: '#10B981',
-        size: 140
-    });
+    // --- Steering Buttons Setup ---
+    const btnLeft = document.getElementById('btn-left');
+    const btnRight = document.getElementById('btn-right');
 
-    manager.on('move', (evt, data) => {
-        // x goes from -1 (left) to 1 (right) based on distance and angle horizontally
-        if (data.direction) {
-            // max distance from center is size/2 = 70.
-            // Using the raw X coordinate relative to the joystick center allows the user
-            // to rotate the stick in a full circle and still accurately capture left/right magnitude
-            const rawX = Math.cos(data.angle.radian) * data.distance;
+    function handleSteer(val, btn) {
+        state.steer = val;
+        btn.classList.add('active-touch');
+        if (navigator.vibrate) navigator.vibrate(15);
+    }
 
-            // normalize to -1.0 to 1.0 (left vs right)
-            let normX = rawX / 70.0;
-            normX = Math.max(-1.0, Math.min(1.0, normX));
-
-            state.steer = normX;
-        }
-    });
-
-    manager.on('end', () => {
+    function resetSteer(btn) {
         state.steer = 0;
-    });
+        btn.classList.remove('active-touch');
+    }
+
+    // Left Button
+    btnLeft.addEventListener('mousedown', () => handleSteer(-1, btnLeft));
+    btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); handleSteer(-1, btnLeft); }, { passive: false });
+    btnLeft.addEventListener('mouseup', () => resetSteer(btnLeft));
+    btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); resetSteer(btnLeft); }, { passive: false });
+    btnLeft.addEventListener('mouseleave', () => resetSteer(btnLeft));
+
+    // Right Button
+    btnRight.addEventListener('mousedown', () => handleSteer(1, btnRight));
+    btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); handleSteer(1, btnRight); }, { passive: false });
+    btnRight.addEventListener('mouseup', () => resetSteer(btnRight));
+    btnRight.addEventListener('touchend', (e) => { e.preventDefault(); resetSteer(btnRight); }, { passive: false });
+    btnRight.addEventListener('mouseleave', () => resetSteer(btnRight));
 
     // --- Gear Shifter Setup ---
     const track = document.getElementById('gear-slider-track');
