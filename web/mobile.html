@@ -253,6 +253,60 @@
             font-size: 0.9rem;
             color: var(--text-dim);
         }
+
+        /* Motion Toggle */
+        .motion-toggle-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 20;
+        }
+
+        .motion-toggle-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .motion-toggle-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-dim);
+        }
+
+        /* Camera Preview */
+        #camera-preview {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            width: 120px;
+            height: 90px;
+            background: #000;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            display: none;
+            z-index: 15;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-video {
+            display: none;
+        }
+
+        .output-canvas {
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+        }
     </style>
 </head>
 
@@ -263,6 +317,16 @@
         <div id="overlay-spinner"></div>
         <div id="overlay-message">Connecting to game...</div>
         <div id="overlay-submessage">Make sure the desktop game is open</div>
+    </div>
+
+    <div class="motion-toggle-container">
+        <button id="motion-toggle-btn" class="motion-toggle-btn">Camera 📷</button>
+    </div>
+
+    <!-- Camera Preview for Hand Tracking -->
+    <div id="camera-preview">
+        <video class="input-video"></video>
+        <canvas class="output-canvas"></canvas>
     </div>
 
     <header>
@@ -299,6 +363,8 @@
     </div>
 
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="mobile.js"></script>
 </body>
 

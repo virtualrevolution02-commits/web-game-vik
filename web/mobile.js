@@ -19,7 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Controller State ---
     const state = {
         steer: 0, // -1 (left) to 1 (right)
-        gear: 0   // 0 (Park), 1, 2, or 3
+        gear: 0,   // 0 (Park), 1, 2, or 3
+        motionEnabled: false
     };
 
     // --- PeerJS Setup ---
@@ -104,18 +105,149 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Left Button
-    btnLeft.addEventListener('mousedown', () => handleSteer(-1, btnLeft));
-    btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); handleSteer(-1, btnLeft); }, { passive: false });
-    btnLeft.addEventListener('mouseup', () => resetSteer(btnLeft));
-    btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); resetSteer(btnLeft); }, { passive: false });
-    btnLeft.addEventListener('mouseleave', () => resetSteer(btnLeft));
+    btnLeft.addEventListener('mousedown', () => { if (!state.motionEnabled) handleSteer(-1, btnLeft) });
+    btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); if (!state.motionEnabled) handleSteer(-1, btnLeft) }, { passive: false });
+    btnLeft.addEventListener('mouseup', () => { if (!state.motionEnabled) resetSteer(btnLeft) });
+    btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); if (!state.motionEnabled) resetSteer(btnLeft) }, { passive: false });
+    btnLeft.addEventListener('mouseleave', () => { if (!state.motionEnabled) resetSteer(btnLeft) });
 
     // Right Button
-    btnRight.addEventListener('mousedown', () => handleSteer(1, btnRight));
-    btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); handleSteer(1, btnRight); }, { passive: false });
-    btnRight.addEventListener('mouseup', () => resetSteer(btnRight));
-    btnRight.addEventListener('touchend', (e) => { e.preventDefault(); resetSteer(btnRight); }, { passive: false });
-    btnRight.addEventListener('mouseleave', () => resetSteer(btnRight));
+    btnRight.addEventListener('mousedown', () => { if (!state.motionEnabled) handleSteer(1, btnRight) });
+    btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); if (!state.motionEnabled) handleSteer(1, btnRight) }, { passive: false });
+    btnRight.addEventListener('mouseup', () => { if (!state.motionEnabled) resetSteer(btnRight) });
+    btnRight.addEventListener('touchend', (e) => { e.preventDefault(); if (!state.motionEnabled) resetSteer(btnRight) }, { passive: false });
+    btnRight.addEventListener('mouseleave', () => { if (!state.motionEnabled) resetSteer(btnRight) });
+
+    // --- MediaPipe Hand Tracking Setup ---
+    const motionBtn = document.getElementById('motion-toggle-btn');
+    const cameraPreview = document.getElementById('camera-preview');
+    const videoElement = document.querySelector('.input-video');
+    const canvasElement = document.querySelector('.output-canvas');
+    const canvasCtx = canvasElement.getContext('2d');
+
+    let camera = null;
+    let hands = null;
+
+    motionBtn.addEventListener('click', toggleMotionControl);
+
+    function toggleMotionControl() {
+        state.motionEnabled = !state.motionEnabled;
+
+        if (state.motionEnabled) {
+            motionBtn.classList.add('active');
+            cameraPreview.style.display = 'block';
+            motionBtn.textContent = 'Camera ON 🟢';
+            initMediaPipe();
+
+            // Visual feedback on buttons
+            btnLeft.style.opacity = '0.3';
+            btnRight.style.opacity = '0.3';
+            state.steer = 0; // reset manual steer
+        } else {
+            motionBtn.classList.remove('active');
+            cameraPreview.style.display = 'none';
+            motionBtn.textContent = 'Camera 📷';
+
+            if (camera) {
+                camera.stop();
+            }
+
+            // Restore buttons
+            btnLeft.style.opacity = '1';
+            btnRight.style.opacity = '1';
+            state.steer = 0;
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        }
+    }
+
+    function initMediaPipe() {
+        if (hands) {
+            camera.start();
+            return; // Already initialized
+        }
+
+        hands = new window.Hands({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }
+        });
+
+        hands.setOptions({
+            maxNumHands: 2,
+            modelComplexity: 0,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        hands.onResults(onHandResults);
+
+        camera = new window.Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({ image: videoElement });
+            },
+            width: 320,
+            height: 240,
+            facingMode: 'user' // Front camera typically preferred for driving
+        });
+
+        camera.start();
+    }
+
+    function onHandResults(results) {
+        if (!state.motionEnabled) return;
+
+        // Draw preview
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+        // Calculate steering based on exact same logic as desktop
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+
+            // Draw landmarks for visual feedback
+            for (const landmarks of results.multiHandLandmarks) {
+                for (const point of landmarks) {
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(point.x * canvasElement.width, point.y * canvasElement.height, 2, 0, 2 * Math.PI);
+                    canvasCtx.fillStyle = '#10B981';
+                    canvasCtx.fill();
+                }
+            }
+
+            if (results.multiHandLandmarks.length >= 2) {
+                // Two Hands Logic - steering wheel angle simulation
+                const hand1 = results.multiHandLandmarks[0][9];
+                const hand2 = results.multiHandLandmarks[1][9];
+
+                // Sort left to right
+                const sortedHands = hand1.x < hand2.x ? [hand1, hand2] : [hand2, hand1];
+                const leftHand = sortedHands[0];
+                const rightHand = sortedHands[1];
+
+                const dx = rightHand.x - leftHand.x;
+                const dy = rightHand.y - leftHand.y;
+
+                // raw angle mapping, normalized similarly to the desktop logic.
+                // dy > 0 means right hand is lower than left (steering right)
+                // Normalize it directly to -1 to 1 for state.steer
+                const steerValueRaw = (dy / Math.max(dx, 0.1));
+                state.steer = Math.max(-1, Math.min(1, steerValueRaw));
+
+            } else {
+                // One Hand Logic - horizontal position mapping
+                const landmarks = results.multiHandLandmarks[0];
+                const x = landmarks[9].x; // X coordinate of middle finger base (0.0 to 1.0)
+
+                // 0.5 is center. > 0.5 is right, < 0.5 is left.
+                // scale x2 so going 25% off center produces full steering.
+                state.steer = Math.max(-1, Math.min(1, (x - 0.5) * 2.0));
+            }
+        } else {
+            // No hands detected, return to center
+            state.steer = 0;
+        }
+        canvasCtx.restore();
+    }
 
     // --- Gear Shifter Setup ---
     const track = document.getElementById('gear-slider-track');
