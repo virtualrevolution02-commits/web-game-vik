@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Controller State ---
     const state = {
         steer: 0, // -1 (left) to 1 (right)
-        gear: 1   // 1, 2, or 3
+        gear: 0   // 0 (Park), 1, 2, or 3
     };
 
     // --- PeerJS Setup ---
@@ -137,12 +137,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setGear(gearLevel) {
         state.gear = gearLevel;
-        knob.textContent = gearLevel;
+        knob.textContent = gearLevel === 0 ? 'P' : gearLevel;
 
-        // Update visual position (0% = Gear 1, 50% = Gear 2, 100% = Gear 3)
+        // Update visual position (0% = Gear P, 33% = Gear 1, 66% = Gear 2, 100% = Gear 3)
         // Note: 'bottom' percentage.
-        if (gearLevel === 1) knob.style.bottom = "0%";
-        else if (gearLevel === 2) knob.style.bottom = "50%";
+        if (gearLevel === 0) knob.style.bottom = "0%";
+        else if (gearLevel === 1) knob.style.bottom = "33%";
+        else if (gearLevel === 2) knob.style.bottom = "66%";
         else if (gearLevel === 3) knob.style.bottom = "100%";
 
         // Haptic feedback if supported
@@ -169,10 +170,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let ratio = 1 - (y / height);
         ratio = Math.max(0, Math.min(1, ratio));
 
-        // Snap to nearest gear zone (1: 0-0.33, 2: 0.33-0.66, 3: 0.66-1.0)
-        let newGear = 1;
-        if (ratio > 0.75) newGear = 3;
-        else if (ratio > 0.25) newGear = 2;
+        // Snap to nearest gear zone (P: 0-0.25, 1: 0.25-0.5, 2: 0.5-0.75, 3: 0.75-1.0)
+        let newGear = 0;
+        if (ratio > 0.8) newGear = 3;
+        else if (ratio > 0.5) newGear = 2;
+        else if (ratio > 0.2) newGear = 1;
 
         if (newGear !== state.gear) {
             setGear(newGear);

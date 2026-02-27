@@ -115,7 +115,7 @@
         enabled: false,
         connected: false,
         steerValue: 0,
-        gear: 1, // 1 to 3
+        gear: 0, // 0 (Park) to 3
         peer: null,
         conn: null,
     };
@@ -1393,7 +1393,7 @@
                     // Wait, in game input: left = 1, right = -1 for `steerInput`.
                     // data.steer is -1 left, 1 right. So we multiply by -1.
                     mobileControl.steerValue = -data.steer * 15.0; // scale up to match steer logic
-                    mobileControl.gear = data.gear || 1;
+                    mobileControl.gear = typeof data.gear === 'number' ? data.gear : 0;
                 }
             });
 
@@ -1590,8 +1590,16 @@
             }
         } else if (mobileControl.enabled) {
             if (mobileControl.connected) {
-                isAccelerating = true;
-                // mobileControl.steerValue is already scaled to [-15, 15] range, map to [-1, 1]
+                if (mobileControl.gear > 0) {
+                    isAccelerating = true;
+                } else {
+                    // Park/Gear 0 -> Brake if moving forward, else stop
+                    if (v.speed > 0.1 && (v.vel.x * fwdX + v.vel.z * fwdZ) > 0) {
+                        isBraking = true;
+                    } else {
+                        v.vel.x = 0; v.vel.z = 0; v.speed = 0;
+                    }
+                }
                 steerInput = Math.max(-1, Math.min(1, mobileControl.steerValue / 15.0));
             } else {
                 if (v.speed > 0.1 && (v.vel.x * fwdX + v.vel.z * fwdZ) > 0) isBraking = true;
@@ -1609,6 +1617,7 @@
         if (mobileControl.enabled && mobileControl.connected) {
             if (mobileControl.gear === 1) currentTopSpeed *= 0.33;
             else if (mobileControl.gear === 2) currentTopSpeed *= 0.66;
+            else if (mobileControl.gear === 3) currentTopSpeed *= 1.0;
         }
 
         if (isAccelerating) { const ac = 1.0 - (v.speed / currentTopSpeed) * 0.6; v.vel.x += fwdX * CFG.ACCEL * ac * dt; v.vel.z += fwdZ * CFG.ACCEL * ac * dt; }
