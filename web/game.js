@@ -31,8 +31,8 @@
         GRIP_DRIFT: 0.30,
         DRIFT_THRESHOLD: 0.40,
 
-        PARTICLE_COUNT: 1200,
-        PARTICLE_SPAWN_RATE: 4,
+        PARTICLE_COUNT: 4000,
+        PARTICLE_SPAWN_RATE: 8,
 
         FIXED_DT: 1 / 60,
 
@@ -340,8 +340,8 @@
     // ─── INIT ──────────────────────────────────────────────────────────────────
     function init() {
         const canvas = document.getElementById('game-canvas');
-        renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
-        renderer.setPixelRatio(1);
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+        renderer.setPixelRatio(window.devicePixelRatio || 2);
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setClearColor(CFG.BG_COLOR);
         renderer.shadowMap.enabled = true;
@@ -363,21 +363,21 @@
         camera.lookAt(0, 0, 0);
 
         // Lights
-        ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+        ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
         scene.add(ambientLight);
-        dirLight = new THREE.DirectionalLight(0xffffff, 0.75);
+        dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
         dirLight.position.set(20, 40, 20);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
+        dirLight.shadow.mapSize.width = 4096; // 4K shadow resolution
+        dirLight.shadow.mapSize.height = 4096; // 4K shadow resolution
         dirLight.shadow.camera.left = -50;
         dirLight.shadow.camera.right = 50;
         dirLight.shadow.camera.top = 50;
         dirLight.shadow.camera.bottom = -50;
         dirLight.shadow.camera.near = 0.5;
         dirLight.shadow.camera.far = 150;
-        dirLight.shadow.bias = -0.0005;
-        dirLight.shadow.radius = 4; // Softer shadows
+        dirLight.shadow.bias = -0.0003;
+        dirLight.shadow.radius = 2.5; // Crisper, high-quality soft shadows
         scene.add(dirLight);
 
         // Subtle hemisphere light for ground tint
@@ -479,38 +479,40 @@
         carGroup.add(intake);
 
         // === CABIN (Model Y tall greenhouse & continuous glass roof) ===
-        const cabinGeo = new THREE.BoxGeometry(1.5, 0.65, 1.8);
+        // Note: Using ExtrudeGeometry for cabin/windows creates a more complex defined shape 
+        // but to keep it simple and high-poly, we use slight bevel on boxes or cylinders where applicable.
+        const cabinGeo = new THREE.BoxGeometry(1.5, 0.65, 1.8, 4, 4, 4);
         const cabin = new THREE.Mesh(cabinGeo, bodyMat);
         cabin.position.set(0, 1.10, -0.2);
         carGroup.add(cabin);
 
         // Panoramic roof (dark glass stretching across)
-        const roofGlassGeo = new THREE.BoxGeometry(1.3, 0.05, 1.7);
+        const roofGlassGeo = new THREE.BoxGeometry(1.3, 0.05, 1.7, 2, 1, 2);
         const roofGlass = new THREE.Mesh(roofGlassGeo, glassMat);
         roofGlass.position.set(0, 1.43, -0.2);
         carGroup.add(roofGlass);
 
         // Fastback rear hatch slope
-        const hatchSlopeGeo = new THREE.BoxGeometry(1.45, 0.45, 1.1);
+        const hatchSlopeGeo = new THREE.BoxGeometry(1.45, 0.45, 1.1, 4, 2, 4);
         const hatchSlope = new THREE.Mesh(hatchSlopeGeo, bodyMat);
         hatchSlope.position.set(0, 0.95, -1.3);
         hatchSlope.rotation.x = 0.45;
         carGroup.add(hatchSlope);
 
         // Minor ducktail spoiler molded into hatch
-        const tailWingGeo = new THREE.BoxGeometry(1.5, 0.1, 0.3);
+        const tailWingGeo = new THREE.BoxGeometry(1.5, 0.1, 0.3, 2, 1, 2);
         const tailWing = new THREE.Mesh(tailWingGeo, bodyMat);
         tailWing.position.set(0, 0.85, -1.85);
         tailWing.rotation.x = -0.1;
         carGroup.add(tailWing);
 
         // === REAR SECTION (Tall, bulbous hatch) ===
-        const rearGeo = new THREE.BoxGeometry(1.95, 0.65, 0.8);
+        const rearGeo = new THREE.BoxGeometry(1.95, 0.65, 0.8, 4, 2, 4);
         const rear = new THREE.Mesh(rearGeo, bodyMat);
         rear.position.set(0, 0.55, -1.9);
         carGroup.add(rear);
 
-        const rearBumperGeo = new THREE.BoxGeometry(1.9, 0.35, 0.2);
+        const rearBumperGeo = new THREE.BoxGeometry(1.9, 0.35, 0.2, 4, 2, 2);
         const rearBumper = new THREE.Mesh(rearBumperGeo, darkMat);
         rearBumper.position.set(0, 0.35, -2.25);
         carGroup.add(rearBumper);
@@ -518,14 +520,14 @@
         // NO EXHAUST PIPES - EV Feature
 
         // === WINDSHIELD & WINDOWS ===
-        const wsGeo = new THREE.BoxGeometry(1.45, 0.50, 0.06);
+        const wsGeo = new THREE.BoxGeometry(1.45, 0.50, 0.06, 2, 2, 1);
         const ws = new THREE.Mesh(wsGeo, glassMat);
         ws.position.set(0, 1.05, 0.75);
         ws.rotation.x = -0.4;
         carGroup.add(ws);
 
         // Heavy sloped hatch window
-        const rwGeo = new THREE.BoxGeometry(1.30, 0.55, 0.06);
+        const rwGeo = new THREE.BoxGeometry(1.30, 0.55, 0.06, 2, 2, 1);
         const rw = new THREE.Mesh(rwGeo, glassMat);
         rw.position.set(0, 1.05, -1.15);
         rw.rotation.x = 0.55;
@@ -533,7 +535,7 @@
 
         // Side windows
         for (let s = -1; s <= 1; s += 2) {
-            const swGeo = new THREE.BoxGeometry(0.06, 0.45, 1.6);
+            const swGeo = new THREE.BoxGeometry(0.06, 0.45, 1.6, 1, 2, 2);
             const sw = new THREE.Mesh(swGeo, glassMat);
             sw.position.set(s * 0.75, 1.05, -0.2);
             carGroup.add(sw);
@@ -541,7 +543,7 @@
 
         // Side mirrors (sleeker)
         for (let s = -1; s <= 1; s += 2) {
-            const mirrorGeo = new THREE.BoxGeometry(0.15, 0.10, 0.15);
+            const mirrorGeo = new THREE.BoxGeometry(0.15, 0.10, 0.15, 2, 2, 2);
             const mirror = new THREE.Mesh(mirrorGeo, bodyMat);
             mirror.position.set(s * 0.85, 0.95, 0.5);
             carGroup.add(mirror);
@@ -549,20 +551,20 @@
 
         // === FENDERS (Smooth, subtle arches) ===
         for (let s = -1; s <= 1; s += 2) {
-            const ffGeo = new THREE.BoxGeometry(0.15, 0.40, 1.2);
+            const ffGeo = new THREE.BoxGeometry(0.15, 0.40, 1.2, 2, 2, 2);
             const ff = new THREE.Mesh(ffGeo, bodyMat);
             ff.position.set(s * 0.98, 0.48, 1.1);
             carGroup.add(ff);
 
-            const rfGeo = new THREE.BoxGeometry(0.15, 0.45, 1.2);
+            const rfGeo = new THREE.BoxGeometry(0.15, 0.45, 1.2, 2, 2, 2);
             const rf = new THREE.Mesh(rfGeo, bodyMat);
             rf.position.set(s * 0.98, 0.50, -1.4);
             carGroup.add(rf);
         }
 
-        // === WHEELS (Larger SUV tires) ===
-        const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.25, 10);
-        const rimGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.26, 6);
+        // === WHEELS (Larger SUV tires, high poly count for smooth rolling) ===
+        const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.25, 32);
+        const rimGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.26, 16);
         const rimMat = new THREE.MeshPhongMaterial({ color: 0x888888, flatShading: true }); // Uberturbine style dark grey
 
         const wheelPositions = [
@@ -587,7 +589,7 @@
         // === HEADLIGHTS (Swept back LEDs) ===
         for (let s = -1; s <= 1; s += 2) {
             // LED Light strip housing
-            const hlGeo = new THREE.BoxGeometry(0.30, 0.12, 0.45);
+            const hlGeo = new THREE.BoxGeometry(0.30, 0.12, 0.45, 2, 2, 2);
             const hlMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF }); // Bright white LED
             const hl = new THREE.Mesh(hlGeo, hlMat);
             hl.position.set(s * 0.8, 0.72, 2.10);
@@ -597,11 +599,11 @@
         }
 
         // Headlight PointLights (actual illumination)
-        headlightL = new THREE.PointLight(0xFFFFFF, 2.5, 25, 2);
+        headlightL = new THREE.PointLight(0xFFFFFF, 3.5, 35, 2); // Boosted range and intensity
         headlightL.position.set(-0.8, 0.72, 3.0);
         carGroup.add(headlightL);
 
-        headlightR = new THREE.PointLight(0xFFFFFF, 2.5, 25, 2);
+        headlightR = new THREE.PointLight(0xFFFFFF, 3.5, 35, 2); // Boosted range and intensity
         headlightR.position.set(0.8, 0.72, 3.0);
         carGroup.add(headlightR);
 
@@ -609,19 +611,19 @@
         const glowTexture = createGlowTexture();
         const glowMatL = new THREE.SpriteMaterial({ map: glowTexture, color: 0xFFFFFF, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
         headlightGlowL = new THREE.Sprite(glowMatL);
-        headlightGlowL.scale.set(4.0, 4.0, 1);
+        headlightGlowL.scale.set(5.0, 5.0, 1); // Bigger glow
         headlightGlowL.position.set(-0.8, 0.72, 2.5);
         carGroup.add(headlightGlowL);
 
         const glowMatR = new THREE.SpriteMaterial({ map: glowTexture, color: 0xFFFFFF, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
         headlightGlowR = new THREE.Sprite(glowMatR);
-        headlightGlowR.scale.set(4.0, 4.0, 1);
+        headlightGlowR.scale.set(5.0, 5.0, 1); // Bigger glow
         headlightGlowR.position.set(0.8, 0.72, 2.5);
         carGroup.add(headlightGlowR);
 
         // === TAILLIGHTS (Sharp, wrap-around) ===
         for (let s = -1; s <= 1; s += 2) {
-            const tlGeo = new THREE.BoxGeometry(0.50, 0.15, 0.10);
+            const tlGeo = new THREE.BoxGeometry(0.50, 0.15, 0.10, 2, 2, 1);
             const tlMat = new THREE.MeshBasicMaterial({ color: 0xFF1111 });
             const tl = new THREE.Mesh(tlGeo, tlMat);
             tl.position.set(s * 0.75, 0.75, -2.25);
@@ -631,7 +633,7 @@
 
         // Flush door handles (Model Y style)
         for (let s = -1; s <= 1; s += 2) {
-            const handleGeo = new THREE.BoxGeometry(0.02, 0.05, 0.20);
+            const handleGeo = new THREE.BoxGeometry(0.02, 0.05, 0.20, 1, 1, 2);
             const handle1 = new THREE.Mesh(handleGeo, chromeMat);
             handle1.position.set(s * 1.01, 0.70, 0.2);
             carGroup.add(handle1);
@@ -957,7 +959,7 @@
 
 
     // ─── WORLD GENERATION ────────────────────────────────────────────────────────
-    const objPools = { tree: [], rock: [], bush: [], flowers: [], cone: [], crate: [], grass: [] };
+    const objPools = { tree: [], rock: [], bush: [], flowers: [], cone: [], crate: [], grass: [], deer: [], bird: [], butterfly: [] };
     function getPooled(type, createFn, rng) {
         let obj;
         if (objPools[type] && objPools[type].length > 0) {
@@ -1013,8 +1015,41 @@
                         bush.rotation.y = rng() * Math.PI * 2;
                         scene.add(bush);
                         cellData.meshes.push(bush);
+                    } else if (roll < 0.16) {
+                        // Spawn a Deer (approx 1% chance per object roll in the cell)
+                        const deer = getPooled('deer', createDeer, rng);
+                        // Put deer directly on the ground
+                        deer.position.set(wx, 0, wz);
+                        // Make deer face a random direction
+                        deer.rotation.y = rng() * Math.PI * 2;
+                        scene.add(deer);
+                        cellData.meshes.push(deer);
+                    } else if (roll < 0.17) {
+                        // Spawn a Bird
+                        const bird = getPooled('bird', createBird, rng);
+                        bird.position.set(wx, 4 + rng() * 6, wz); // Flying high up
+                        bird.rotation.y = rng() * Math.PI * 2;
+                        scene.add(bird);
+                        cellData.meshes.push(bird);
+                    } else if (roll < 0.18) {
+                        // Spawn a Butterfly
+                        const butterfly = getPooled('butterfly', createButterfly, rng);
+                        butterfly.position.set(wx, 0.5 + rng() * 1.5, wz); // Flying low
+                        butterfly.rotation.y = rng() * Math.PI * 2;
+                        scene.add(butterfly);
+                        cellData.meshes.push(butterfly);
                     } else if (isRoadside) {
-                        if (rng() < 0.95) {
+                        // Very rare occurrence for Family Camp
+                        if (rng() < 0.005 && !window.hasSpawnedFamilyCamp && vehicle.distTravelled > 200) {
+                            window.hasSpawnedFamilyCamp = true;
+                            const camp = createFamilyCamp();
+                            // Place it alongside the road, facing the road
+                            camp.position.set(wx, 0, wz);
+                            // Face roughly towards the origin of the cell (often towards road)
+                            camp.lookAt(cellWorldX, 0, cellWorldZ);
+                            scene.add(camp);
+                            cellData.meshes.push(camp);
+                        } else if (rng() < 0.95) {
                             const count = 15 + Math.floor(rng() * 10);
                             for (let i = 0; i < count; i++) {
                                 const h = 0.4 + rng() * 0.8;
@@ -1127,7 +1162,8 @@
     function createTree(rng) {
         const group = new THREE.Group();
         const trunkH = 2.0 + rng() * 3.0, trunkR = 0.15 + rng() * 0.15;
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(trunkR * 0.7, trunkR, trunkH, 6), _treeTrunkMat);
+        // High poly trunk
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(trunkR * 0.7, trunkR, trunkH, 12), _treeTrunkMat);
         trunk.position.y = trunkH / 2; group.add(trunk);
 
         const layers = 3 + Math.floor(rng() * 4);
@@ -1135,29 +1171,30 @@
         const treeType = rng();
 
         if (treeType > 0.6) {
-            // Pine tree style (steep overlapping cones)
+            // Pine tree style (steep overlapping cones, high poly)
             for (let i = 0; i < layers; i++) {
                 const h = 1.8 + rng() * 1.2;
                 const w = (1.8 - i * 0.3) + rng() * 0.4;
-                const f = new THREE.Mesh(new THREE.ConeGeometry(w, h, 6), fMat);
+                const f = new THREE.Mesh(new THREE.ConeGeometry(w, h, 16), fMat);
                 f.position.y = trunkH * 0.6 + i * 0.9;
                 group.add(f);
             }
         } else if (treeType > 0.3) {
-            // Oak/Round style (overlapping icospheres)
+            // Oak/Round style (overlapping icospheres, higher detail)
             const clusterCount = layers * 2;
             for (let i = 0; i < clusterCount; i++) {
                 const r = 1.0 + rng() * 1.2;
-                const f = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 0), fMat);
+                // Note: detail level 1 for much better rounding on icospheres
+                const f = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), fMat);
                 f.position.set((rng() - 0.5) * 2.5, trunkH + (rng() - 0.2) * 3.0, (rng() - 0.5) * 2.5);
                 f.rotation.set(rng() * Math.PI, rng() * Math.PI, 0);
                 group.add(f);
             }
         } else {
-            // New: Slim Poplar style
+            // Slim Poplar style (smoother cylinders)
             for (let i = 0; i < layers + 2; i++) {
                 const r = 0.6 + rng() * 0.4;
-                const f = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.8, r, 1.2, 5), fMat);
+                const f = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.8, r, 1.2, 12), fMat);
                 f.position.y = trunkH * 0.5 + i * 0.8;
                 group.add(f);
             }
@@ -1180,12 +1217,13 @@
         const group = new THREE.Group();
         const mat = _rockMats[Math.floor(rng() * _rockMats.length)];
         const size = 0.5 + rng() * 1.2;
-        const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(size, 0), mat);
+        // Dodecahedron detail 1 for more complex rock shapes
+        const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(size, 1), mat);
         rock.position.y = size * 0.4; rock.scale.set(1.0 + rng() * 0.3, 0.4 + rng() * 0.3, 1.0 + rng() * 0.3);
         rock.rotation.set(rng() * 0.3, rng() * Math.PI, rng() * 0.3); group.add(rock);
         if (rng() > 0.4) {
             const s2 = size * (0.25 + rng() * 0.3);
-            const r2 = new THREE.Mesh(new THREE.DodecahedronGeometry(s2, 0), mat);
+            const r2 = new THREE.Mesh(new THREE.DodecahedronGeometry(s2, 1), mat);
             r2.position.set((rng() - 0.5) * size * 1.5, s2 * 0.35, (rng() - 0.5) * size * 1.5);
             r2.scale.y = 0.5 + rng() * 0.3; group.add(r2);
         }
@@ -1204,6 +1242,282 @@
         return group;
     }
 
+    function createFamilyCamp() {
+        const group = new THREE.Group();
+        group.userData.isCamp = true;
+
+        // 1. Tent (Pyramid shape)
+        const tentGeo = new THREE.ConeGeometry(1.8, 2.0, 4);
+        tentGeo.rotateY(Math.PI / 4);
+        const tentMat = new THREE.MeshPhongMaterial({ color: 0xE67E22, flatShading: true }); // Orange tent
+        const tent = new THREE.Mesh(tentGeo, tentMat);
+        tent.position.set(-2, 1.0, -1);
+        tent.castShadow = true; tent.receiveShadow = true;
+        group.add(tent);
+
+        // 2. Campfire Base (Rocks)
+        const fireGroup = new THREE.Group();
+        const rockMat = new THREE.MeshPhongMaterial({ color: 0x555555, flatShading: true });
+        for (let i = 0; i < 8; i++) {
+            const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.2, 0), rockMat);
+            const a = (i / 8) * Math.PI * 2;
+            rock.position.set(Math.cos(a) * 0.5, 0.1, Math.sin(a) * 0.5);
+            fireGroup.add(rock);
+        }
+        // Campfire light (Warm orange)
+        const fireLight = new THREE.PointLight(0xFF5500, 3.0, 20);
+        fireLight.position.set(0, 0.5, 0);
+        fireLight.castShadow = true;
+        fireGroup.add(fireLight);
+        // Fire particles / mesh
+        const fireMesh = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.6, 3), new THREE.MeshBasicMaterial({ color: 0xFFAA00 }));
+        fireMesh.position.set(0, 0.3, 0);
+        fireGroup.add(fireMesh);
+        group.userData.fireLight = fireLight;
+        group.add(fireGroup);
+
+        // 3. Sitting Logs
+        const logMat = new THREE.MeshPhongMaterial({ color: 0x5A3A22, flatShading: true });
+        const logGeo = new THREE.CylinderGeometry(0.2, 0.2, 1.5, 6);
+        logGeo.rotateZ(Math.PI / 2);
+
+        const log1 = new THREE.Mesh(logGeo, logMat);
+        log1.position.set(0, 0.2, 1.2);
+        log1.castShadow = true; log1.receiveShadow = true;
+        group.add(log1);
+
+        const log2 = new THREE.Mesh(logGeo, logMat);
+        log2.position.set(0, 0.2, -1.2);
+        log2.castShadow = true; log2.receiveShadow = true;
+        group.add(log2);
+
+        // 4. Family Members (Simple Blocky People)
+        const skinMat = new THREE.MeshPhongMaterial({ color: 0xFFDAB9 });
+        const shirtMats = [new THREE.MeshPhongMaterial({ color: 0x2980B9 }), new THREE.MeshPhongMaterial({ color: 0xC0392B }), new THREE.MeshPhongMaterial({ color: 0x27AE60 })];
+        const pantsMat = new THREE.MeshPhongMaterial({ color: 0x2C3E50 });
+
+        function makePerson(shirtMat, scaleFactor) {
+            const pGroup = new THREE.Group();
+            // Body (Sitting)
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.2), shirtMat);
+            body.position.set(0, 0.45, 0); pGroup.add(body);
+            // Head
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), skinMat);
+            head.position.set(0, 0.825, 0); pGroup.add(head);
+            // Legs
+            const legs = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.4), pantsMat);
+            legs.position.set(0, 0.1, 0.1); pGroup.add(legs);
+
+            pGroup.scale.set(scaleFactor, scaleFactor, scaleFactor);
+            pGroup.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+            return pGroup;
+        }
+
+        // Parent 1
+        const dad = makePerson(shirtMats[0], 1.0);
+        dad.position.set(-0.3, 0.2, 1.2); dad.rotation.y = Math.PI;
+        group.add(dad);
+
+        // Parent 2
+        const mom = makePerson(shirtMats[1], 0.95);
+        mom.position.set(0.4, 0.2, 1.2); mom.rotation.y = Math.PI;
+        group.add(mom);
+
+        // Child
+        const child = makePerson(shirtMats[2], 0.65);
+        child.position.set(0, 0.2, -1.2);
+        group.add(child);
+
+        return group;
+    }
+
+    function createDeer(rng) {
+        const group = new THREE.Group();
+        group.userData.type = 'deer'; // Mark for object pool
+
+        // Deer Materials
+        const bodyMat = new THREE.MeshPhongMaterial({ color: 0x8B5A2B, flatShading: true }); // Brown
+        const bellyMat = new THREE.MeshPhongMaterial({ color: 0xD2B48C, flatShading: true }); // Tan
+        const antlerMat = new THREE.MeshPhongMaterial({ color: 0xDEB887, flatShading: true }); // Light wood
+        const noseMat = new THREE.MeshPhongMaterial({ color: 0x111111, flatShading: true }); // Black
+
+        // 1. Body
+        const bodyGeo = new THREE.BoxGeometry(0.5, 0.6, 1.2);
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.set(0, 0.9, 0);
+        group.add(body);
+
+        // Belly accent
+        const bellyGeo = new THREE.BoxGeometry(0.48, 0.2, 1.1);
+        const belly = new THREE.Mesh(bellyGeo, bellyMat);
+        belly.position.set(0, 0.7, 0);
+        group.add(belly);
+
+        // 2. Neck
+        const neckGeo = new THREE.BoxGeometry(0.3, 0.7, 0.3);
+        const neckGroup = new THREE.Group();
+        neckGroup.position.set(0, 1.05, 0.5); // Pivot point at bottom of neck
+        const neck = new THREE.Mesh(neckGeo, bodyMat);
+        neck.position.set(0, 0.35, 0); // Offset geometry
+        neckGroup.add(neck);
+        neckGroup.rotation.x = -0.3; // Angle forward initially
+        group.add(neckGroup);
+        group.userData.neck = neckGroup;
+
+        // 3. Head (Child of neck so it moves with it)
+        const headGroup = new THREE.Group();
+        headGroup.position.set(0, 0.7, 0); // Pivot at top of neck
+        neckGroup.add(headGroup);
+        group.userData.head = headGroup;
+
+        const headGeo = new THREE.BoxGeometry(0.35, 0.4, 0.6);
+        const head = new THREE.Mesh(headGeo, bodyMat);
+        head.position.set(0, 0, 0.25);
+        headGroup.add(head);
+
+        // Snout / Nose
+        const snoutGeo = new THREE.BoxGeometry(0.25, 0.2, 0.4);
+        const snout = new THREE.Mesh(snoutGeo, bodyMat);
+        snout.position.set(0, -0.1, 0.3);
+        headGroup.add(snout);
+
+        const nose = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), noseMat);
+        nose.position.set(0, -0.05, 0.5);
+        headGroup.add(nose);
+
+        // Ears
+        const earGeo = new THREE.BoxGeometry(0.1, 0.25, 0.1);
+        for (let s = -1; s <= 1; s += 2) {
+            const ear = new THREE.Mesh(earGeo, bodyMat);
+            ear.position.set(s * 0.2, 0.15, -0.2);
+            ear.rotation.z = s * -0.5;
+            ear.rotation.x = -0.2;
+            headGroup.add(ear);
+        }
+
+        // 4. Antlers (Only 50% chance to be a buck)
+        if (rng() > 0.5) {
+            const antlerBaseGeo = new THREE.BoxGeometry(0.05, 0.6, 0.05);
+            const antlerBranchGeo = new THREE.BoxGeometry(0.04, 0.3, 0.04);
+            for (let s = -1; s <= 1; s += 2) {
+                // Main stem
+                const aMain = new THREE.Mesh(antlerBaseGeo, antlerMat);
+                aMain.position.set(s * 0.15, 0.4, -0.1);
+                aMain.rotation.z = s * -0.3;
+                aMain.rotation.x = 0.2;
+                headGroup.add(aMain);
+
+                // Branch
+                const aBranch = new THREE.Mesh(antlerBranchGeo, antlerMat);
+                aBranch.position.set(s * 0.25, 0.5, 0);
+                aBranch.rotation.z = s * -0.6;
+                aBranch.rotation.x = 0.4;
+                headGroup.add(aBranch);
+            }
+        }
+
+        // 5. Legs
+        const legGeo = new THREE.BoxGeometry(0.15, 0.8, 0.15);
+        const legPositions = [
+            { x: -0.15, z: 0.4 }, { x: 0.15, z: 0.4 },  // Front
+            { x: -0.15, z: -0.4 }, { x: 0.15, z: -0.4 } // Back
+        ];
+
+        legPositions.forEach(pos => {
+            const leg = new THREE.Mesh(legGeo, bodyMat);
+            leg.position.set(pos.x, 0.4, pos.z);
+            group.add(leg);
+        });
+
+        // 6. Tail
+        const tailGeo = new THREE.BoxGeometry(0.15, 0.25, 0.15);
+        const tail = new THREE.Mesh(tailGeo, bellyMat); // Whiteish tail
+        tail.position.set(0, 1.1, -0.65);
+        tail.rotation.x = -0.5;
+        group.add(tail);
+
+        // Scale and cleanup
+        const scale = 0.8 + rng() * 0.4; // Randomize sizing a bit
+        group.scale.set(scale, scale, scale);
+
+        group.traverse(c => {
+            if (c.isMesh) {
+                c.castShadow = true;
+                c.receiveShadow = true;
+            }
+        });
+
+        return group;
+    }
+
+    function createBird(rng) {
+        const group = new THREE.Group();
+        group.userData.type = 'bird';
+        group.userData.flightSpeed = 4 + rng() * 4;
+        group.userData.timeOffset = rng() * 100;
+
+        const bodyMat = new THREE.MeshPhongMaterial({ color: 0x111111, flatShading: true }); // Crow/raven style
+        const bodyGeo = new THREE.ConeGeometry(0.1, 0.4, 4);
+        bodyGeo.rotateX(Math.PI / 2);
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        group.add(body);
+
+        const wingGeo = new THREE.BoxGeometry(0.5, 0.02, 0.15);
+        // left wing
+        const lWingGroup = new THREE.Group();
+        lWingGroup.position.set(0.05, 0, 0);
+        const lWing = new THREE.Mesh(wingGeo, bodyMat);
+        lWing.position.set(0.25, 0, 0);
+        lWingGroup.add(lWing);
+        group.add(lWingGroup);
+
+        // right wing
+        const rWingGroup = new THREE.Group();
+        rWingGroup.position.set(-0.05, 0, 0);
+        const rWing = new THREE.Mesh(wingGeo, bodyMat);
+        rWing.position.set(-0.25, 0, 0);
+        rWingGroup.add(rWing);
+        group.add(rWingGroup);
+
+        group.userData.lWing = lWingGroup;
+        group.userData.rWing = rWingGroup;
+
+        group.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+        return group;
+    }
+
+    function createButterfly(rng) {
+        const group = new THREE.Group();
+        group.userData.type = 'butterfly';
+        group.userData.timeOffset = rng() * 100;
+
+        const colors = [0xFF5733, 0x33FF57, 0x3357FF, 0xF1C40F, 0x9B59B6];
+        const wingMat = new THREE.MeshBasicMaterial({ color: colors[Math.floor(rng() * colors.length)], side: THREE.DoubleSide });
+
+        const wingGeo = new THREE.PlaneGeometry(0.2, 0.2);
+        wingGeo.rotateX(Math.PI / 2);
+
+        // left wing
+        const lWingGroup = new THREE.Group();
+        const lWing = new THREE.Mesh(wingGeo, wingMat);
+        lWing.position.set(0.1, 0, 0);
+        lWingGroup.add(lWing);
+        group.add(lWingGroup);
+
+        // right wing
+        const rWingGroup = new THREE.Group();
+        const rWing = new THREE.Mesh(wingGeo, wingMat);
+        rWing.position.set(-0.1, 0, 0);
+        rWingGroup.add(rWing);
+        group.add(rWingGroup);
+
+        group.userData.lWing = lWingGroup;
+        group.userData.rWing = rWingGroup;
+
+        // Give butterflies a subtle glow as they are small
+        group.traverse(c => { if (c.isMesh) { c.castShadow = true; } });
+        return group;
+    }
 
     function createCone() {
         const group = new THREE.Group();
@@ -1277,8 +1591,8 @@
         const rearR = v.pos.clone().add(fwd.clone().multiplyScalar(-1.5)).add(right.clone().multiplyScalar(1.0)); rearR.y = 0.15;
         const exhaust = v.pos.clone().add(fwd.clone().multiplyScalar(-2.3)); exhaust.y = 0.22;
 
-        // Increased smoke density for consistent trail
-        let rate = isHeavy ? Math.min(6, Math.floor(Math.abs(v.slipAngle) * 15)) : 3;
+        // Increased smoke density for consistent trail (Denser for 4K)
+        let rate = isHeavy ? Math.min(12, Math.floor(Math.abs(v.slipAngle) * 30)) : 6;
         if (v.speed < 0.5) rate = 0; // Don't smoke if practically stationary
 
         for (let i = 0; i < rate; i++) {
@@ -1370,7 +1684,7 @@
                 width: 128,
                 height: 128,
                 colorDark: "#000000",
-                colorLight: "#ffffff",
+                colorLight: "transparent",
                 correctLevel: QRCode.CorrectLevel.L
             });
             qrContainer.style.display = 'block';
@@ -1646,7 +1960,9 @@
         v.bodyRoll += (-steerInput * Math.min(v.speed * 0.015, 0.08) - v.bodyRoll) * 6 * dt;
         v.bodyPitch += (((isBraking ? 0.04 : 0) + (isAccelerating ? -0.02 : 0)) - v.bodyPitch) * 5 * dt;
         const isBurnout = isAccelerating && v.speed < 2 && v.speed > 0.1;
-        if (v.isDrifting || isBurnout || handbraking) emitSmoke(true); else if (v.speed > 0.5) emitSmoke(false);
+        if (v.speed > 0.5) {
+            emitSmoke(true);
+        }
         if (gameStarted) sendMessageToFlutter({ type: 'gameState', speed: Math.round(v.speed * 10), drifting: v.isDrifting });
     }
 
@@ -1688,6 +2004,41 @@
                 if (meshes[i].userData.isLamp) {
                     meshes[i].userData.light.intensity = dayNightRatio * 2.0;
                     meshes[i].userData.glow.material.opacity = 0.2 + (dayNightRatio * 0.8);
+                }
+                if (meshes[i].userData.isCamp) {
+                    // Make the campfire flicker at night
+                    if (dayNightRatio > 0.1) {
+                        meshes[i].userData.fireLight.intensity = (2.0 + Math.sin(time * 10) * 0.5) * dayNightRatio;
+                    } else {
+                        meshes[i].userData.fireLight.intensity = 0;
+                    }
+                }
+
+                if (meshes[i].userData.type === 'deer' && meshes[i].userData.neck) {
+                    // Idle grazing animation (slowly moving head up and down)
+                    // Use the deer's world position X to offset the sine wave so they don't all move in sync
+                    const offset = meshes[i].position.x * 0.5;
+                    meshes[i].userData.neck.rotation.x = -0.3 + Math.sin(time * 1.5 + offset) * 0.4;
+                }
+
+                if (meshes[i].userData.type === 'bird') {
+                    const offset = meshes[i].userData.timeOffset;
+                    const flapSpeed = meshes[i].userData.flightSpeed * 5;
+                    meshes[i].userData.lWing.rotation.z = Math.sin(time * flapSpeed + offset) * 0.8;
+                    meshes[i].userData.rWing.rotation.z = -Math.sin(time * flapSpeed + offset) * 0.8;
+                    // Bop up and down
+                    meshes[i].position.y += Math.sin(time * 3 + offset) * 0.05;
+                }
+
+                if (meshes[i].userData.type === 'butterfly') {
+                    const offset = meshes[i].userData.timeOffset;
+                    const flapSpeed = 15;
+                    meshes[i].userData.lWing.rotation.z = Math.sin(time * flapSpeed + offset) * 0.8 + 0.5;
+                    meshes[i].userData.rWing.rotation.z = -Math.sin(time * flapSpeed + offset) * 0.8 - 0.5;
+                    // Flutter around
+                    meshes[i].position.y += Math.sin(time * 5 + offset) * 0.02;
+                    meshes[i].position.x += Math.cos(time * 2 + offset) * 0.02;
+                    meshes[i].position.z += Math.sin(time * 2.5 + offset) * 0.02;
                 }
             }
         }
