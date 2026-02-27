@@ -110,6 +110,16 @@
         speedText: null,
     };
 
+    // Mobile Control State
+    const mobileControl = {
+        enabled: false,
+        connected: false,
+        steerValue: 0,
+        gear: 1, // 1 to 3
+        peer: null,
+        conn: null,
+    };
+
     // ─── UTILS ────────────────────────────────────────────────────────────────
     function sendMessageToFlutter(message) {
         // Handle InAppWebView (Android/iOS)
@@ -383,6 +393,7 @@
         initLeafPool();
         setupInput();
         initHandTracking();
+        initMobileControl();
 
         window.addEventListener('resize', onResize);
 
@@ -1298,6 +1309,111 @@
         });
     }
 
+    // ─── MOBILE CONTROL (PeerJS + UI) ──────────────────────────────────────────
+    window.setControlMode = function (mode) {
+        const btnMotion = document.getElementById('tab-motion');
+        const btnMobile = document.getElementById('tab-mobile');
+        const uiMotion = document.getElementById('ui-motion');
+        const uiMobile = document.getElementById('ui-mobile');
+
+        if (mode === 'motion') {
+            btnMotion.classList.add('active');
+            btnMobile.classList.remove('active');
+            uiMotion.style.display = 'block';
+            uiMobile.style.display = 'none';
+
+            mobileControl.enabled = false;
+        } else if (mode === 'mobile') {
+            btnMobile.classList.add('active');
+            btnMotion.classList.remove('active');
+            uiMobile.style.display = 'block';
+            uiMotion.style.display = 'none';
+
+            // Disable hand tracking if it was running
+            const handBtn = document.getElementById('hand-tracking-btn');
+            if (handTracking.enabled && handBtn) {
+                handBtn.click(); // turn it off safely
+            }
+
+            mobileControl.enabled = true;
+
+            if (!gameStarted) {
+                gameStarted = true;
+                initAudio();
+                sendMessageToFlutter({ type: 'gameStarted' });
+            }
+        }
+    };
+
+    function initMobileControl() {
+        const qrContainer = document.getElementById('qr-container');
+        const qrcodeElement = document.getElementById('qrcode');
+        const statusText = document.getElementById('mobile-status-text');
+        const statusDot = document.querySelector('.mobile-dot');
+
+        if (!qrContainer || typeof Peer === 'undefined') return;
+
+        mobileControl.peer = new Peer({ debug: 2 });
+
+        mobileControl.peer.on('open', (id) => {
+            console.log('Host Peer ID:', id);
+            statusText.textContent = "Waiting for connection...";
+
+            // Build absolute URL for mobile.html
+            const loc = window.location;
+            const mobileUrl = `${loc.protocol}//${loc.host}/mobile.html?p=${id}`;
+
+            // Generate QR Code
+            qrcodeElement.innerHTML = '';
+            new QRCode(qrcodeElement, {
+                text: mobileUrl,
+                width: 128,
+                height: 128,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.L
+            });
+            qrContainer.style.display = 'block';
+        });
+
+        mobileControl.peer.on('connection', (conn) => {
+            console.log('Mobile device connected!');
+            mobileControl.conn = conn;
+            mobileControl.connected = true;
+
+            statusText.textContent = "Connected";
+            statusDot.classList.add('active');
+            // Hide QR code to clean up UI once connected
+            qrContainer.style.display = 'none';
+
+            conn.on('data', (data) => {
+                if (data && data.type === 'control') {
+                    // steer: -1 to 1 (left to right) -> game input mapping
+                    // our game input: left=-1 steerSpeed vs right=+1 steerSpeed.
+                    // Wait, in game input: left = 1, right = -1 for `steerInput`.
+                    // data.steer is -1 left, 1 right. So we multiply by -1.
+                    mobileControl.steerValue = -data.steer * 15.0; // scale up to match steer logic
+                    mobileControl.gear = data.gear || 1;
+                }
+            });
+
+            conn.on('close', () => {
+                console.log('Mobile device disconnected');
+                mobileControl.connected = false;
+                mobileControl.steerValue = 0;
+
+                statusText.textContent = "Waiting for connection...";
+                statusDot.classList.remove('active');
+                qrContainer.style.display = 'block'; // Show QR again
+            });
+        });
+
+        mobileControl.peer.on('error', (err) => {
+            console.error('PeerHost error:', err);
+            statusText.textContent = "Peer network error";
+        });
+    }
+
     // ─── HAND TRACKING ─────────────────────────────────────────────────────────
     function initHandTracking() {
         const videoElement = document.getElementsByClassName('input-video')[0];
@@ -1451,48 +1567,57 @@
         try { const o = audioCtx.createOscillator(); o.type = 'sine'; o.frequency.value = 600; const g = audioCtx.createGain(); g.gain.value = 0.04; g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.08); } catch (e) { }
     }
 
-    // â”€â”€â”€ PHYSICS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── PHYSICS ──────────────────────────────────────────────────────────────────
     function fixedUpdate(dt) {
         const v = vehicle, fwdX = Math.sin(v.heading), fwdZ = Math.cos(v.heading), rightX = Math.cos(v.heading), rightZ = -Math.sin(v.heading);
-        // Hand Tracking Override
+
         let steerInput = 0;
+        let isAccelerating = false;
+        let isBraking = false;
+
         if (handTracking.enabled) {
             if (handTracking.handDetected) {
                 // Auto drive straight + Hand steering
-                input.up = true;
-                input.down = false; // ensure not braking
+                isAccelerating = true;
                 steerInput = Math.max(-1, Math.min(1, handTracking.steerValue));
             } else {
                 // Hand Lost -> Stop the car
-                input.up = false;
-                // Only brake if the car is currently moving forward
                 if (v.speed > 0.1 && (v.vel.x * fwdX + v.vel.z * fwdZ) > 0) {
-                    input.down = true;
+                    isBraking = true;
                 } else {
-                    input.down = false;
-                    // Fully zero out velocity when stopped to prevent lingering movement
-                    v.vel.x = 0;
-                    v.vel.z = 0;
-                    v.speed = 0;
+                    v.vel.x = 0; v.vel.z = 0; v.speed = 0;
                 }
-                steerInput = 0;
+            }
+        } else if (mobileControl.enabled) {
+            if (mobileControl.connected) {
+                isAccelerating = true;
+                // mobileControl.steerValue is already scaled to [-15, 15] range, map to [-1, 1]
+                steerInput = Math.max(-1, Math.min(1, mobileControl.steerValue / 15.0));
+            } else {
+                if (v.speed > 0.1 && (v.vel.x * fwdX + v.vel.z * fwdZ) > 0) isBraking = true;
+                else { v.vel.x = 0; v.vel.z = 0; v.speed = 0; }
             }
         } else {
             // Standard keyboard control
             if (input.left) steerInput = 1;
             if (input.right) steerInput = -1;
+            isAccelerating = input.up;
+            isBraking = input.down;
         }
 
-        if (input.up) { const ac = 1.0 - (v.speed / CFG.TOP_SPEED) * 0.6; v.vel.x += fwdX * CFG.ACCEL * ac * dt; v.vel.z += fwdZ * CFG.ACCEL * ac * dt; }
-        if (input.down) { v.vel.x -= fwdX * CFG.BRAKE * dt; v.vel.z -= fwdZ * CFG.BRAKE * dt; }
+        let currentTopSpeed = CFG.TOP_SPEED;
+        if (mobileControl.enabled && mobileControl.connected) {
+            if (mobileControl.gear === 1) currentTopSpeed *= 0.33;
+            else if (mobileControl.gear === 2) currentTopSpeed *= 0.66;
+        }
+
+        if (isAccelerating) { const ac = 1.0 - (v.speed / currentTopSpeed) * 0.6; v.vel.x += fwdX * CFG.ACCEL * ac * dt; v.vel.z += fwdZ * CFG.ACCEL * ac * dt; }
+        if (isBraking) { v.vel.x -= fwdX * CFG.BRAKE * dt; v.vel.z -= fwdZ * CFG.BRAKE * dt; }
 
         const speedRatio = Math.min(v.speed / CFG.TOP_SPEED, 1.0);
         let steerSpeed = CFG.STEER_SPEED * (1.0 - speedRatio * 0.55) + CFG.STEER_SPEED_HIGH * speedRatio * 0.55;
 
-        // Boost steering speed for hand tracking to make it feel "immediate" and accurate
-        if (handTracking.enabled && handTracking.handDetected) {
-            steerSpeed *= 2.0;
-        }
+        if (handTracking.enabled && handTracking.handDetected) steerSpeed *= 2.0;
 
         if (steerInput !== 0 && v.speed > 0.3) v.angularVel += steerInput * steerSpeed * dt;
         v.angularVel *= CFG.ANGULAR_DAMP; v.heading += v.angularVel * dt;
@@ -1506,12 +1631,12 @@
         if (handbraking) { v.vel.x *= 0.995; v.vel.z *= 0.995; }
         v.vel.x *= CFG.DRAG; v.vel.z *= CFG.DRAG;
         v.speed = Math.sqrt(v.vel.x * v.vel.x + v.vel.z * v.vel.z);
-        if (v.speed > CFG.TOP_SPEED) { const r = CFG.TOP_SPEED / v.speed; v.vel.x *= r; v.vel.z *= r; v.speed = CFG.TOP_SPEED; }
+        if (v.speed > currentTopSpeed) { const r = currentTopSpeed / v.speed; v.vel.x *= r; v.vel.z *= r; v.speed = currentTopSpeed; }
         v.pos.x += v.vel.x * dt; v.pos.z += v.vel.z * dt;
         v.distTravelled += v.speed * dt;
         v.bodyRoll += (-steerInput * Math.min(v.speed * 0.015, 0.08) - v.bodyRoll) * 6 * dt;
-        v.bodyPitch += (((input.down ? 0.04 : 0) + (input.up ? -0.02 : 0)) - v.bodyPitch) * 5 * dt;
-        const isBurnout = input.up && v.speed < 2 && v.speed > 0.1;
+        v.bodyPitch += (((isBraking ? 0.04 : 0) + (isAccelerating ? -0.02 : 0)) - v.bodyPitch) * 5 * dt;
+        const isBurnout = isAccelerating && v.speed < 2 && v.speed > 0.1;
         if (v.isDrifting || isBurnout || handbraking) emitSmoke(true); else if (v.speed > 0.5) emitSmoke(false);
         if (gameStarted) sendMessageToFlutter({ type: 'gameState', speed: Math.round(v.speed * 10), drifting: v.isDrifting });
     }

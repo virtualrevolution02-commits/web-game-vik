@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <!-- Disable zoom & scrolling for mobile optimization -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vistara Mobile Controller</title>
+
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent: #10B981;
+            --accent-dim: rgba(16, 185, 129, 0.3);
+            --text: #ffffff;
+            --text-dim: #8b949e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(circle at top right, rgba(16, 185, 129, 0.15), transparent 50%),
+                radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.15), transparent 50%);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 20px;
+            text-align: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #10B981, #3B82F6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+            /* disconnected red */
+            box-shadow: 0 0 8px #ef4444;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .status-dot.connected {
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        .controller-area {
+            flex: 1;
+            display: flex;
+            position: relative;
+        }
+
+        .joystick-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #joystick-zone {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .joystick-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.1);
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            pointer-events: none;
+        }
+
+        .gear-container {
+            width: 100px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-left: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 30px 0;
+            z-index: 10;
+        }
+
+        .gear-label {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .gear-slider-track {
+            width: 40px;
+            flex: 1;
+            margin: 20px 0;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px 0;
+        }
+
+        .gear-notch {
+            width: 100%;
+            height: 2px;
+            background: var(--glass-border);
+            position: relative;
+        }
+
+        .gear-notch::after {
+            content: attr(data-gear);
+            position: absolute;
+            left: -25px;
+            top: -8px;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            font-weight: bold;
+        }
+
+        .gear-knob {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #2a2d35, #1d2025);
+            border: 2px solid var(--glass-border);
+            border-radius: 50%;
+            position: absolute;
+            left: -6px;
+            bottom: 0%;
+            /* 0% = Gear 1, 50% = Gear 2, 100% = Gear 3 (adjusted for centering) */
+            transform: translateY(50%);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 1.2rem;
+            transition: bottom 0.2s cubic-bezier(0.2, 0.8, 0.2, 1.2), box-shadow 0.2s;
+        }
+
+        .gear-knob.active {
+            box-shadow: 0 0 20px var(--accent-dim), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Screen overlay for connection errors */
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 17, 23, 0.95);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            transition: opacity 0.5s;
+        }
+
+        .overlay-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #overlay-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--glass-border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #overlay-message {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        #overlay-submessage {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Overlay for connecting and errors -->
+    <div id="overlay">
+        <div id="overlay-spinner"></div>
+        <div id="overlay-message">Connecting to game...</div>
+        <div id="overlay-submessage">Make sure the desktop game is open</div>
+    </div>
+
+    <header>
+        <div class="title">Vistara Drive</div>
+        <div class="status">
+            <span id="status-text">Connecting</span>
+            <div id="status-dot" class="status-dot"></div>
+        </div>
+    </header>
+
+    <div class="controller-area">
+
+        <!-- Joystick Zone -->
+        <div class="joystick-container">
+            <div id="joystick-zone"></div>
+            <div class="joystick-label">Steer</div>
+        </div>
+
+        <!-- Gear Shifter -->
+        <div class="gear-container">
+            <div class="gear-label">Speed</div>
+
+            <div class="gear-slider-track" id="gear-slider-track">
+                <!-- Visual Notches for gears 3, 2, 1 (top to bottom) -->
+                <div class="gear-notch" data-gear="3"></div>
+                <div class="gear-notch" data-gear="2"></div>
+                <div class="gear-notch" data-gear="1"></div>
+
+                <div class="gear-knob" id="gear-knob" style="bottom: 0%;">1</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+    <script src="mobile.js"></script>
+</body>
+
+</html>

@@ -16,6 +16,10 @@
       "destination": "/game.html"
     },
     {
+      "source": "/mobile.html",
+      "destination": "/mobile.html"
+    },
+    {
       "source": "/((?!api/|game.html).*)",
       "destination": "/index.html"
     }
