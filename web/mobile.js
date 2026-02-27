@@ -95,16 +95,18 @@ document.addEventListener('DOMContentLoaded', () => {
         mode: 'dynamic',
         position: { left: '50%', top: '50%' },
         color: '#10B981',
-        size: 140,
-        lockY: true // Restrict to horizontal movement mostly, or we can just ignore Y
+        size: 140
     });
 
     manager.on('move', (evt, data) => {
-        // x goes from -1 (left) to 1 (right) roughly based on distance and angle
+        // x goes from -1 (left) to 1 (right) based on distance and angle horizontally
         if (data.direction) {
-            // max distance is size/2 = 70.
+            // max distance from center is size/2 = 70.
+            // Using the raw X coordinate relative to the joystick center allows the user
+            // to rotate the stick in a full circle and still accurately capture left/right magnitude
             const rawX = Math.cos(data.angle.radian) * data.distance;
-            // normalize to -1.0 to 1.0
+
+            // normalize to -1.0 to 1.0 (left vs right)
             let normX = rawX / 70.0;
             normX = Math.max(-1.0, Math.min(1.0, normX));
 
