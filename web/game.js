@@ -1600,7 +1600,7 @@
                         v.vel.x = 0; v.vel.z = 0; v.speed = 0;
                     }
                 }
-                steerInput = Math.max(-1, Math.min(1, mobileControl.steerValue / 15.0));
+                steerInput = Math.max(-1, Math.min(1, mobileControl.steerValue));
             } else {
                 if (v.speed > 0.1 && (v.vel.x * fwdX + v.vel.z * fwdZ) > 0) isBraking = true;
                 else { v.vel.x = 0; v.vel.z = 0; v.speed = 0; }

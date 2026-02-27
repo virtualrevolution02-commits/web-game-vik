@@ -227,10 +227,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dx = rightHand.x - leftHand.x;
                 const dy = rightHand.y - leftHand.y;
 
-                // raw angle mapping, normalized similarly to the desktop logic.
+                // raw angle mapping, exactly matched to desktop logic
                 // dy > 0 means right hand is lower than left (steering right)
-                // Normalize it directly to -1 to 1 for state.steer
-                const steerValueRaw = (dy / Math.max(dx, 0.1));
+                const steerValueRaw = (dy / Math.max(dx, 0.1)) * 15.0;
                 state.steer = Math.max(-1, Math.min(1, steerValueRaw));
 
             } else {
@@ -238,9 +237,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const landmarks = results.multiHandLandmarks[0];
                 const x = landmarks[9].x; // X coordinate of middle finger base (0.0 to 1.0)
 
-                // 0.5 is center. > 0.5 is right, < 0.5 is left.
-                // scale x2 so going 25% off center produces full steering.
-                state.steer = Math.max(-1, Math.min(1, (x - 0.5) * 2.0));
+                // exactly matched to desktop logic
+                state.steer = Math.max(-1, Math.min(1, (x - 0.5) * 15.0));
             }
         } else {
             // No hands detected, return to center
