@@ -37,8 +37,8 @@
         FIXED_DT: 1 / 60,
 
         // World gen
-        SPAWN_RADIUS: 55,
-        DESPAWN_RADIUS: 70,
+        SPAWN_RADIUS: 45,
+        DESPAWN_RADIUS: 55,
         OBJECT_DENSITY: 0.55,
         CELL_SIZE: 12,
 
@@ -57,8 +57,8 @@
     let groundMesh, gridMesh;
     let particlePool;
     let grassInstances, flowerStemInstances, flowerHeadInstances = [];
-    const MAX_GRASS = 150000;
-    const MAX_FLOWERS = 30000;
+    const MAX_GRASS = 50000;
+    const MAX_FLOWERS = 10000;
     let audioCtx, engineOsc, engineGain, driftNoiseNode, driftGain;
 
     // Day/Night Cycle
@@ -212,7 +212,7 @@
             leafPool.rotations.push(new THREE.Vector3());
         }
         leafPool.mesh.instanceMatrix.needsUpdate = true;
-        leafPool.mesh.castShadow = true;
+        leafPool.mesh.castShadow = false;
         scene.add(leafPool.mesh);
     }
 
@@ -1270,7 +1270,7 @@
         // Campfire light (Warm orange)
         const fireLight = new THREE.PointLight(0xFF5500, 3.0, 20);
         fireLight.position.set(0, 0.5, 0);
-        fireLight.castShadow = true;
+        fireLight.castShadow = false;
         fireGroup.add(fireLight);
         // Fire particles / mesh
         const fireMesh = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.6, 3), new THREE.MeshBasicMaterial({ color: 0xFFAA00 }));
