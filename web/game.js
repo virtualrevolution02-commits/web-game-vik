@@ -31,7 +31,7 @@
         GRIP_DRIFT: 0.30,
         DRIFT_THRESHOLD: 0.40,
 
-        PARTICLE_COUNT: 4000,
+        PARTICLE_COUNT: 2000,
         PARTICLE_SPAWN_RATE: 8,
 
         FIXED_DT: 1 / 60,
@@ -341,7 +341,7 @@
     function init() {
         const canvas = document.getElementById('game-canvas');
         renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-        renderer.setPixelRatio(window.devicePixelRatio || 2);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setClearColor(CFG.BG_COLOR);
         renderer.shadowMap.enabled = true;
@@ -368,8 +368,8 @@
         dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
         dirLight.position.set(20, 40, 20);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 4096; // 4K shadow resolution
-        dirLight.shadow.mapSize.height = 4096; // 4K shadow resolution
+        dirLight.shadow.mapSize.width = 2048; // 2K shadow resolution
+        dirLight.shadow.mapSize.height = 2048; // 2K shadow resolution
         dirLight.shadow.camera.left = -50;
         dirLight.shadow.camera.right = 50;
         dirLight.shadow.camera.top = 50;
@@ -565,9 +565,9 @@
             carGroup.add(rf);
         }
 
-        // === WHEELS (Larger SUV tires, high poly count for smooth rolling) ===
-        const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.25, 32);
-        const rimGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.26, 16);
+        // === WHEELS (Larger SUV tires, moderate poly count for performance) ===
+        const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.25, 16);
+        const rimGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.26, 8);
         const rimMat = new THREE.MeshPhongMaterial({ color: 0x888888, flatShading: true }); // Uberturbine style dark grey
 
         const wheelPositions = [
