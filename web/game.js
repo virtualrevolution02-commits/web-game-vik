@@ -1706,10 +1706,8 @@
             conn.on('data', (data) => {
                 if (data && data.type === 'control') {
                     // steer: -1 to 1 (left to right) -> game input mapping
-                    // our game input: left=-1 steerSpeed vs right=+1 steerSpeed.
-                    // Wait, in game input: left = 1, right = -1 for `steerInput`.
-                    // data.steer is -1 left, 1 right. So we multiply by -1.
-                    mobileControl.steerValue = -data.steer * 15.0; // scale up to match steer logic
+                    // our game input: left=1 steerSpeed vs right=-1 steerSpeed.
+                    mobileControl.steerValue = data.steer * 15.0; // scale up to match steer logic
                     mobileControl.gear = typeof data.gear === 'number' ? data.gear : 0;
                 }
             });
@@ -1837,9 +1835,8 @@
                 const dy = rightHand.y - leftHand.y;
 
                 // dy > 0 means right hand is lower than left hand (steering right)
-                // Inverted: dy > 0 now steers Right (negative value in game)
-                // We remove the '-' sign to flip the direction
-                handTracking.steerValue = (dy / Math.max(dx, 0.1)) * 15.0;
+                // Inverted: dy > 0 now steers Left again (positive value in game)
+                handTracking.steerValue = -(dy / Math.max(dx, 0.1)) * 15.0;
                 handTracking.lastX = (leftHand.x + rightHand.x) / 2;
             } else {
                 // One Hand Logic
@@ -1847,8 +1844,8 @@
                 const x = landmarks[9].x;
                 handTracking.lastX = x;
 
-                // Inverted: (x - 0.5) instead of (0.5 - x) to flip steering
-                handTracking.steerValue = (x - 0.5) * 15.0;
+                // Inverted: (0.5 - x) instead of (x - 0.5) to flip steering back
+                handTracking.steerValue = (0.5 - x) * 15.0;
             }
         } else {
             handTracking.handDetected = false;
