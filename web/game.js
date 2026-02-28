@@ -395,6 +395,9 @@
         initHandTracking();
         initMobileControl();
 
+        // Ensure UI defaults to mobile control
+        setControlMode('mobile');
+
         window.addEventListener('resize', onResize);
 
         // Start rendering the background immediately

@@ -367,12 +367,12 @@
 
   <div id="desktop-ui">
     <div class="mode-toggle">
-      <button id="tab-motion" class="mode-btn active" onclick="setControlMode('motion')">Motion</button>
-      <button id="tab-mobile" class="mode-btn" onclick="setControlMode('mobile')">Mobile Controller</button>
+      <button id="tab-mobile" class="mode-btn active" onclick="setControlMode('mobile')">Mobile Controller</button>
+      <button id="tab-motion" class="mode-btn" onclick="setControlMode('motion')">Motion</button>
     </div>
 
     <!-- Motion UI -->
-    <div id="ui-motion">
+    <div id="ui-motion" style="display: none;">
       <div id="camera-preview">
         <video class="input-video"></video>
         <canvas class="output-canvas"></canvas>
@@ -386,7 +386,7 @@
     </div>
 
     <!-- Mobile UI -->
-    <div id="ui-mobile" style="display: none;">
+    <div id="ui-mobile">
       <div id="qr-container">
         <div class="qr-title">Scan to Control</div>
         <div id="qrcode"></div>
